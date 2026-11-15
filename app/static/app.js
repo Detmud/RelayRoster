@@ -30,7 +30,7 @@ function fmtVal(v) {
   if (typeof v === "string") return v;
   return JSON.stringify(v);
 }
-const valHtml = (v) => `<span class="sf-val">${esc(fmtVal(v))}</span>`;
+const valHtml = (v) => `<span class="rr-val">${esc(fmtVal(v))}</span>`;
 
 function fmtTime(iso) {
   if (!iso) return "–";
@@ -307,7 +307,7 @@ function renderDashboard(devs, peerDiffs, updates, down) {
       || (a.d.name || "").localeCompare(b.d.name || "", "en", { numeric: true }));
   $("#attnTable tbody").innerHTML = rows.slice(0, ATTN_MAX).map(({ d, items }) => `
     <tr class="cursor-pointer" data-id="${esc(d.id)}">
-      <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="sf-sub">${esc(typeName(d))} · ${esc(d.host)}</span></td>
+      <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub">${esc(typeName(d))} · ${esc(d.host)}</span></td>
       <td><div class="d-flex flex-wrap gap-1">${items.map((i) => i.html).join("")}</div></td>
       <td class="text-end d-none d-sm-table-cell">${statusBadge(d)}</td>
     </tr>`).join("");
@@ -330,7 +330,7 @@ function renderDashboard(devs, peerDiffs, updates, down) {
     if (d.ver) e.vers.add(d.ver);
   });
   const fleet = [...types.entries()].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0], "en", { numeric: true }));
-  $("#fleetTable tbody").innerHTML = fleet.map(([t, e]) => {
+  $("#typesTable tbody").innerHTML = fleet.map(([t, e]) => {
     const vers = [...e.vers].sort(versionCmp);
     const ver = vers.length > 1 ? badge("warn", `${vers.length} versions`, vers.join(", ")) : `<span class="font-monospace small">${esc(vers[0] || "–")}</span>`;
     return `<tr>
@@ -339,8 +339,8 @@ function renderDashboard(devs, peerDiffs, updates, down) {
       <td>${ver}</td>
     </tr>`;
   }).join("");
-  show($("#fleetTable"), fleet.length > 0);
-  show($("#fleetEmpty"), fleet.length === 0);
+  show($("#typesTable"), fleet.length > 0);
+  show($("#typesEmpty"), fleet.length === 0);
 }
 
 function render() {
@@ -371,8 +371,8 @@ function render() {
 // Counter badge on the right of the sidebar menu entry
 function setNavCount(page, n, cls, what) {
   const link = $(`#sidebar .nav-link[data-page="${page}"]`);
-  let c = $(".sf-count", link);
-  if (!c) { c = document.createElement("span"); c.className = `badge ${cls} sf-count`; link.appendChild(c); }
+  let c = $(".rr-count", link);
+  if (!c) { c = document.createElement("span"); c.className = `badge ${cls} rr-count`; link.appendChild(c); }
   c.textContent = n || "";
   c.title = n ? `${n} ${what}` : "";
   show(c, !!n);

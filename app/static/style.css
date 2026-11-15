@@ -4,7 +4,7 @@
 /* Brand colours. Light: midnight navy for buttons and active states, a lighter navy for links so they stand out
    from body text. Dark: navy is too dark on a dark background, so both use lighter tints of the same hue. */
 :root, [data-bs-theme=light] {
-  --sf-accent: #F34A3E;
+  --rr-accent: #F34A3E;
   --tblr-primary: #142D4E;
   --tblr-primary-rgb: 20, 45, 78;
   --tblr-primary-lt-rgb: 232, 234, 237;
@@ -22,170 +22,170 @@
   --tblr-link-hover-color-rgb: 181, 205, 238;
 }
 
-.sf-logo { width: 24px; height: 24px; color: var(--tblr-body-color); flex: none; }
+.rr-logo { width: 24px; height: 24px; color: var(--tblr-body-color); flex: none; }
 /* The only fixed colour: the comb in the logo, brand accent from docs/assets/BRAND.md */
-.sf-logo-accent { fill: var(--sf-accent); }
-.sf-progress { width: 180px; margin-top: 4px; }
-.sf-pct { font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
+.rr-logo-accent { fill: var(--rr-accent); }
+.rr-progress { width: 180px; margin-top: 4px; }
+.rr-pct { font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
 #runCount, #runEta { font-variant-numeric: tabular-nums; }
-.sf-search { max-width: 360px; }
+.rr-search { max-width: 360px; }
 
 /* Device list: search and filters in one wrapping row */
-.sf-devbar { flex-wrap: wrap; gap: .5rem; }
-.sf-devbar .sf-search { flex: 1 1 12rem; }
-.sf-select { width: auto; flex: 0 1 auto; }
-.sf-select.sf-active { border-color: var(--tblr-primary); color: var(--tblr-primary); }
+.rr-devbar { flex-wrap: wrap; gap: .5rem; }
+.rr-devbar .rr-search { flex: 1 1 12rem; }
+.rr-select { width: auto; flex: 0 1 auto; }
+.rr-select.rr-active { border-color: var(--tblr-primary); color: var(--tblr-primary); }
 #devTable th .table-sort { white-space: nowrap; background: transparent; }
 @media (max-width: 767.98px) {
-  .sf-devbar .sf-search { flex-basis: 100%; }
-  .sf-select { flex: 1 1 calc(50% - .25rem); min-width: 0; }
+  .rr-devbar .rr-search { flex-basis: 100%; }
+  .rr-select { flex: 1 1 calc(50% - .25rem); min-width: 0; }
 }
-.sf-minw0 { min-width: 0; }
+.rr-minw0 { min-width: 0; }
 
 /* Inline icons in Tabler style (stroke) */
 svg.icon { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-.sf-sub { display: block; font-size: .75rem; color: var(--tblr-secondary); font-family: var(--tblr-font-monospace); }
-.sf-val { font-family: var(--tblr-font-monospace); font-size: .8125rem; overflow-wrap: break-word; }
+.rr-sub { display: block; font-size: .75rem; color: var(--tblr-secondary); font-family: var(--tblr-font-monospace); }
+.rr-val { font-family: var(--tblr-font-monospace); font-size: .8125rem; overflow-wrap: break-word; }
 
 /* Peer comparison: outliers and missing values */
-td.sf-outlier { background: var(--tblr-yellow-lt); }
-td.sf-outlier .sf-val { color: var(--tblr-yellow); font-weight: 600; }
-td.sf-missing .sf-val { color: var(--tblr-secondary); font-style: italic; }
+td.rr-outlier { background: var(--tblr-yellow-lt); }
+td.rr-outlier .rr-val { color: var(--tblr-yellow); font-weight: 600; }
+td.rr-missing .rr-val { color: var(--tblr-secondary); font-style: italic; }
 
 /* Diff */
-.sf-old, .sf-old .sf-val { color: var(--tblr-red); }
-.sf-new, .sf-new .sf-val { color: var(--tblr-green); }
+.rr-old, .rr-old .rr-val { color: var(--tblr-red); }
+.rr-new, .rr-new .rr-val { color: var(--tblr-green); }
 
-pre.sf-json {
+pre.rr-json {
   margin: 0; max-height: 420px; overflow: auto; white-space: pre;
   font-size: .75rem; border-radius: var(--tblr-border-radius);
 }
 
-textarea.sf-code { min-height: 62vh; font-size: .8125rem; line-height: 1.55; tab-size: 2; resize: vertical; }
+textarea.rr-code { min-height: 62vh; font-size: .8125rem; line-height: 1.55; tab-size: 2; resize: vertical; }
 
 /* Dialogs (naming plan, firmware): native <dialog>, content is a Tabler card */
-dialog.sf-dialog {
+dialog.rr-dialog {
   border: 0; padding: 0; background: transparent; color: inherit;
   width: min(980px, 96vw); max-height: 90vh;
 }
-dialog.sf-dialog::backdrop { background: rgba(10, 12, 16, .5); }
-dialog.sf-dialog > .card { max-height: 90vh; display: flex; flex-direction: column; margin: 0; }
-.sf-dialog-body { overflow: auto; }
-.sf-dialog-body h4 { margin-top: 1.25rem; }
+dialog.rr-dialog::backdrop { background: rgba(10, 12, 16, .5); }
+dialog.rr-dialog > .card { max-height: 90vh; display: flex; flex-direction: column; margin: 0; }
+.rr-dialog-body { overflow: auto; }
+.rr-dialog-body h4 { margin-top: 1.25rem; }
 
 .card + .card { margin-top: 1rem; }
 
 /* Name on the device page: the locked field looks like the page title */
-.sf-name { max-width: 34rem; }
-.sf-name-title .form-control { font-size: inherit; font-weight: inherit; line-height: inherit; }
-.sf-name .form-control[readonly] { background: transparent; border-color: transparent; box-shadow: none; cursor: default;
+.rr-name { max-width: 34rem; }
+.rr-name-title .form-control { font-size: inherit; font-weight: inherit; line-height: inherit; }
+.rr-name .form-control[readonly] { background: transparent; border-color: transparent; box-shadow: none; cursor: default;
   padding-left: 0; }
-.sf-name.sf-editing #nameEdit { visibility: hidden; }   /* no function while editing, the space stays */
-.sf-name .form-control[readonly]:not(.is-invalid):focus { border-color: transparent; box-shadow: none; }
-.sf-name .btn-icon { flex: none; }
-.sf-off { opacity: .45; }
-.sf-off:hover { opacity: .7; }
-.sf-arrow { color: var(--tblr-secondary); padding: 0 .35rem; }
+.rr-name.rr-editing #nameEdit { visibility: hidden; }   /* no function while editing, the space stays */
+.rr-name .form-control[readonly]:not(.is-invalid):focus { border-color: transparent; box-shadow: none; }
+.rr-name .btn-icon { flex: none; }
+.rr-off { opacity: .45; }
+.rr-off:hover { opacity: .7; }
+.rr-arrow { color: var(--tblr-secondary); padding: 0 .35rem; }
 
 /* Header: Sync as a split button, menu right-aligned below the arrow */
-.sf-sync-menu { min-width: 18rem; }
-.sf-sync-menu .dropdown-item { align-items: flex-start; white-space: normal; }
-.sf-sync-menu .dropdown-item-icon { margin-top: .125rem; }
+.rr-sync-menu { min-width: 18rem; }
+.rr-sync-menu .dropdown-item { align-items: flex-start; white-space: normal; }
+.rr-sync-menu .dropdown-item-icon { margin-top: .125rem; }
 #scanHint { font-family: var(--tblr-font-monospace); overflow-wrap: anywhere; }
 
 /* Header on mobile: the Sync text shortens, the split button stays whole */
-.sf-syncinfo { min-width: 0; }
+.rr-syncinfo { min-width: 0; }
 #syncText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.sf-sync { flex: none; }
+.rr-sync { flex: none; }
 @media (max-width: 575.98px) {
-  .sf-actions { min-width: 0; gap: .5rem !important; }
-  .sf-progress { width: 100%; max-width: 120px; }
+  .rr-actions { min-width: 0; gap: .5rem !important; }
+  .rr-progress { width: 100%; max-width: 120px; }
 }
 
 /* Settings */
-.sf-settings { max-width: 46rem; }
-.sf-settings fieldset h3 { font-size: 1rem; }
+.rr-settings { max-width: 46rem; }
+.rr-settings fieldset h3 { font-size: 1rem; }
 
 /* Peer comparison: tabs per device type, horizontally scrollable on mobile */
-.sf-peer-head { padding-top: .5rem; padding-bottom: .5rem; }
-.sf-peer-tabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; gap: .25rem; scrollbar-width: thin; }
-.sf-peer-tabs .nav-link { white-space: nowrap; gap: .35rem; }
+.rr-peer-head { padding-top: .5rem; padding-bottom: .5rem; }
+.rr-peer-tabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; gap: .25rem; scrollbar-width: thin; }
+.rr-peer-tabs .nav-link { white-space: nowrap; gap: .35rem; }
 
 /* ---- Layout following Tabler "Folded hover" ----------------------------------------------------- */
 /* The icon bar, expanding on hover/focus and the section dividers come from Tabler (navbar-folded-hover).
    Only what RelayRoster needs in addition is here. */
 
-.navbar-brand .sf-logo { width: 28px; height: 28px; }
-.sf-count { font-variant-numeric: tabular-nums; }
-.sf-page-sub { max-width: 60rem; }
-.sf-page-sub code { font-size: .8125rem; }
-.sf-version { cursor: default; color: var(--tblr-secondary); }
+.navbar-brand .rr-logo { width: 28px; height: 28px; }
+.rr-count { font-variant-numeric: tabular-nums; }
+.rr-page-sub { max-width: 60rem; }
+.rr-page-sub code { font-size: .8125rem; }
+.rr-version { cursor: default; color: var(--tblr-secondary); }
 #version { font-size: .75rem; }
 
 @media (min-width: 992px) {
   /* Collapsed: hide the name next to the logo, counter as a small badge at the corner of the icon */
-  #sidebar.navbar-folded-hover:not(:hover):not(:has(:focus-visible)) .sf-brand-text { display: none; }
+  #sidebar.navbar-folded-hover:not(:hover):not(:has(:focus-visible)) .rr-brand-text { display: none; }
   #sidebar .navbar-brand { justify-content: flex-start; }
   #sidebar .nav-link { position: relative; }
-  #sidebar.navbar-folded-hover:not(:hover):not(:has(:focus-visible)) .nav-link .sf-count {
+  #sidebar.navbar-folded-hover:not(:hover):not(:has(:focus-visible)) .nav-link .rr-count {
     position: absolute; top: .2rem; inset-inline-start: 1.9rem; margin: 0;
     font-size: .625rem; line-height: 1; padding: .2em .4em; min-width: 0;
   }
 }
 
 /* Dashboard: tiles are links, numbers in tabular figures */
-.sf-num { font-variant-numeric: tabular-nums; }
+.rr-num { font-variant-numeric: tabular-nums; }
 a.card-link:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; }
 
 /* Peer comparison: collapsible summary and hidden differences */
-.sf-peer-more > summary { cursor: pointer; list-style-position: inside; }
-.sf-peer-more > summary:hover { color: var(--tblr-body-color) !important; }
-.sf-peer-more[open] > summary { border-bottom: 1px solid var(--tblr-border-color); }
-table.sf-hidden td, table.sf-hidden .sf-val { color: var(--tblr-secondary); }
+.rr-peer-more > summary { cursor: pointer; list-style-position: inside; }
+.rr-peer-more > summary:hover { color: var(--tblr-body-color) !important; }
+.rr-peer-more[open] > summary { border-bottom: 1px solid var(--tblr-border-color); }
+table.rr-hidden td, table.rr-hidden .rr-val { color: var(--tblr-secondary); }
 
 /* Firmware: all type tables with the same column widths */
-table.sf-fw-table { table-layout: fixed; min-width: 40rem; }
-table.sf-fw-table col.sf-fw-ver { width: 10rem; }
-table.sf-fw-table col.sf-fw-act { width: 7.5rem; }
-table.sf-fw-table td:first-child { overflow: hidden; text-overflow: ellipsis; }
+table.rr-fw-table { table-layout: fixed; min-width: 40rem; }
+table.rr-fw-table col.rr-fw-ver { width: 10rem; }
+table.rr-fw-table col.rr-fw-act { width: 7.5rem; }
+table.rr-fw-table td:first-child { overflow: hidden; text-overflow: ellipsis; }
 
 /* Device page: tabs horizontally scrollable on mobile, links in table rows look like text */
-.sf-scroll-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
-.sf-scroll-tabs .nav-link { white-space: nowrap; }
-a.sf-devlink { color: inherit; }
-a.sf-devlink:hover { color: var(--tblr-primary); text-decoration: underline; }
+.rr-scroll-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.rr-scroll-tabs .nav-link { white-space: nowrap; }
+a.rr-devlink { color: inherit; }
+a.rr-devlink:hover { color: var(--tblr-primary); text-decoration: underline; }
 #pagePre a { color: inherit; }
 #pageSub .badge { vertical-align: middle; }
-.sf-menu { min-width: 14rem; }
-.sf-menu .dropdown-item .icon { margin-right: .5rem; }
-table.sf-settings-table td:first-child { width: 50%; }
-tr.sf-muted-row td, tr.sf-muted-row .sf-val { color: var(--tblr-secondary); }
+.rr-menu { min-width: 14rem; }
+.rr-menu .dropdown-item .icon { margin-right: .5rem; }
+table.rr-settings-table td:first-child { width: 50%; }
+tr.rr-muted-row td, tr.rr-muted-row .rr-val { color: var(--tblr-secondary); }
 
 /* Edit configuration */
-.sf-cfg-bar { position: sticky; top: .5rem; z-index: 5; }
-.sf-cfg-bar:empty { display: none; }
-.sf-cfg-in { max-width: 14rem; }
-.input-group.sf-cfg-in { width: 11rem; flex-wrap: nowrap; }
-tr.sf-changed > td { background: var(--tblr-primary-lt); }
-.card.sf-editing { border-color: var(--tblr-primary); }
+.rr-cfg-bar { position: sticky; top: .5rem; z-index: 5; }
+.rr-cfg-bar:empty { display: none; }
+.rr-cfg-in { max-width: 14rem; }
+.input-group.rr-cfg-in { width: 11rem; flex-wrap: nowrap; }
+tr.rr-changed > td { background: var(--tblr-primary-lt); }
+.card.rr-editing { border-color: var(--tblr-primary); }
 #cfgCalls { white-space: pre-wrap; word-break: break-all; }
 
 /* Apply profile, bulk change */
-dialog.sf-dialog-wide { width: min(1180px, 96vw); }
-.sf-apply tr.sf-skip td { color: var(--tblr-secondary); }
-.sf-apply tr.sf-devrow td { background: var(--tblr-bg-surface-secondary); font-weight: 600; }
-.sf-apply pre { margin: 0; font-size: .75rem; white-space: pre-wrap; word-break: break-all; }
-.sf-chip { display: inline-flex; align-items: center; gap: .25rem; }
-.sf-chip button { border: 0; background: none; padding: 0 .125rem; line-height: 1; color: inherit; cursor: pointer; }
+dialog.rr-dialog-wide { width: min(1180px, 96vw); }
+.rr-apply tr.rr-skip td { color: var(--tblr-secondary); }
+.rr-apply tr.rr-devrow td { background: var(--tblr-bg-surface-secondary); font-weight: 600; }
+.rr-apply pre { margin: 0; font-size: .75rem; white-space: pre-wrap; word-break: break-all; }
+.rr-chip { display: inline-flex; align-items: center; gap: .25rem; }
+.rr-chip button { border: 0; background: none; padding: 0 .125rem; line-height: 1; color: inherit; cursor: pointer; }
 
 /* Component navigation in the Settings tab, stays in place while scrolling */
-@media (min-width: 768px) { .sf-cfg-nav { position: sticky; top: 1rem; } }
-.sf-cfg-nav .list-group-item.active .badge { background: var(--tblr-bg-surface) !important; }
+@media (min-width: 768px) { .rr-cfg-nav { position: sticky; top: 1rem; } }
+.rr-cfg-nav .list-group-item.active .badge { background: var(--tblr-bg-surface) !important; }
 /* Findings page: one table per device card; fixed widths so the columns line up across cards */
-table.sf-findings { table-layout: fixed; min-width: 600px; }
-table.sf-findings .sf-c-path { width: 34%; }
-table.sf-findings .sf-c-val { width: 15%; }
-table.sf-findings .sf-c-src { width: 18%; }
-table.sf-findings .sf-c-act { width: 18%; }
-table.sf-findings td { overflow-wrap: anywhere; }
+table.rr-findings { table-layout: fixed; min-width: 600px; }
+table.rr-findings .rr-c-path { width: 34%; }
+table.rr-findings .rr-c-val { width: 15%; }
+table.rr-findings .rr-c-src { width: 18%; }
+table.rr-findings .rr-c-act { width: 18%; }
+table.rr-findings td { overflow-wrap: anywhere; }

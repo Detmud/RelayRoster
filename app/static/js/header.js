@@ -53,10 +53,10 @@ async function openPlan() {
       <th>Device</th><th>Current name</th><th>New name</th><th>Result</th></tr></thead>
     <tbody>${planChanges.map((c) => `<tr data-plan="${esc(c.device_id)}">
       <td><input class="form-check-input" type="checkbox" checked aria-label="Select ${esc(c.planned)}"></td>
-      <td title="${esc(c.device_id)}">${esc(c.model_name || c.app || c.device_id)}<span class="sf-sub">${esc(c.host)}</span></td>
+      <td title="${esc(c.device_id)}">${esc(c.model_name || c.app || c.device_id)}<span class="rr-sub">${esc(c.host)}</span></td>
       <td>${c.current ? esc(c.current) : `<span class="text-secondary">(no name)</span>`}</td>
       <td class="fw-bold">${esc(c.planned)}</td>
-      <td class="sf-result text-secondary">–</td></tr>`).join("")}</tbody></table></div></div>
+      <td class="rr-result text-secondary">–</td></tr>`).join("")}</tbody></table></div></div>
     <p class="text-secondary small mt-3 mb-0">Home Assistant keeps its own device names and entity IDs. Every write is logged in the device's history.</p>`;
   const boxes = () => $$("tbody input[type=checkbox]", $("#planBody"));
   const update = () => {
@@ -75,13 +75,13 @@ async function applyPlan() {
   if (!ids.length) return;
   $("#planApply").disabled = true;
   $$("input", $("#planBody")).forEach((b) => { b.disabled = true; });
-  rows.forEach((r) => { $(".sf-result", r).innerHTML = `<span class="text-secondary">writing …</span>`; });
+  rows.forEach((r) => { $(".rr-result", r).innerHTML = `<span class="text-secondary">writing …</span>`; });
   try {
     const { body } = await api("api/names/apply", { method: "POST", json: { device_ids: ids } });
     for (const res of body.results) {
       const row = $(`tr[data-plan="${CSS.escape(res.device_id)}"]`, $("#planBody"));
-      if (row) $(".sf-result", row).innerHTML = res.ok ? badge("ok", "written") : badge("bad", "failed", res.error);
-      if (row && !res.ok) $(".sf-result", row).insertAdjacentHTML("beforeend", `<span class="sf-sub text-red">${esc(res.error)}</span>`);
+      if (row) $(".rr-result", row).innerHTML = res.ok ? badge("ok", "written") : badge("bad", "failed", res.error);
+      if (row && !res.ok) $(".rr-result", row).insertAdjacentHTML("beforeend", `<span class="rr-sub text-red">${esc(res.error)}</span>`);
     }
     $("#planSummary").textContent = `${body.ok} written${body.failed ? `, ${body.failed} failed` : ""}.`;
   } catch (e) {

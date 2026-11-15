@@ -7,7 +7,7 @@
 const DEV_TABS = ["overview", "settings", "findings", "backups", "changes"];
 const devHref = (id, tab) => `#device/${encodeURIComponent(id)}${tab && tab !== "overview" ? `/${tab}` : ""}`;
 // data-stop: a click on the link does not also open the row. Ctrl/Cmd/middle click open a new tab
-const devLink = (id, text) => `<a href="${devHref(id)}" class="sf-devlink" data-stop>${esc(text)}</a>`;
+const devLink = (id, text) => `<a href="${devHref(id)}" class="rr-devlink" data-stop>${esc(text)}</a>`;
 const goDevice = (id, tab) => { location.hash = devHref(id, tab); };
 
 function devRoute() {
@@ -108,7 +108,7 @@ function deviceActions(d) {
       ${fwUpd ? fwBtn(`data-fw-open="dev:${esc(d.id)}"`, `Update to ${fwUpd}`, desk) : ""}
       <div class="dropdown">
         <button class="btn btn-icon" type="button" data-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-label="More device actions">${ICON.dots}</button>
-        <div class="dropdown-menu dropdown-menu-end sf-menu" role="menu" data-tblr-popper="static">
+        <div class="dropdown-menu dropdown-menu-end rr-menu" role="menu" data-tblr-popper="static">
           <a class="dropdown-item d-md-none" href="${web}" target="_blank" rel="noopener noreferrer">${ICON.external}Device web UI</a>
           ${menuReboot}${menuFw}
           <div class="dropdown-divider d-md-none"></div>
@@ -133,7 +133,7 @@ function renderDeviceTab() {
   const b = devState.body, d = b.device, tab = devState.tab;
   const tabs = [["overview", "Overview"], ["settings", "Settings"], ["findings", "Findings", b.findings.length],
     ["backups", "Backups", b.snapshots.length], ["changes", "Changes", (b.audit || []).length]];
-  const nav = `<ul class="nav nav-tabs mb-3 sf-scroll-tabs" role="tablist" aria-label="Device sections">${tabs.map(([k, label, n]) =>
+  const nav = `<ul class="nav nav-tabs mb-3 rr-scroll-tabs" role="tablist" aria-label="Device sections">${tabs.map(([k, label, n]) =>
     `<li class="nav-item"><a class="nav-link${k === tab ? " active" : ""}" href="${devHref(d.id, k)}" role="tab" aria-selected="${k === tab}"${k === tab ? ` aria-current="page"` : ""}>${label}${n != null ? ` <span class="badge bg-secondary-lt ms-1">${n}</span>` : ""}</a></li>`).join("")}</ul>`;
   const render = { overview: devOverview, settings: devSettings, findings: devFindings, backups: devBackups, changes: devChanges }[tab];
   $("#devPage").innerHTML = nav + render(b);
@@ -143,8 +143,8 @@ function renderDeviceTab() {
     title: `Restore backup from ${btn.dataset.when}`, request: { mode: "restore", snapshot_id: Number(btn.dataset.restore) }, policy: null })));
   $$("[data-ov-open]", $("#devPage")).forEach((btn) => btn.addEventListener("click", () => openOverride(+btn.dataset.ovOpen)));
   // Bring the active tab into view horizontally only; scrollIntoView pulled the page up
-  const tabsEl = $(".sf-scroll-tabs .active", $("#devPage"));
-  const strip = tabsEl?.closest(".sf-scroll-tabs");
+  const tabsEl = $(".rr-scroll-tabs .active", $("#devPage"));
+  const strip = tabsEl?.closest(".rr-scroll-tabs");
   if (strip && (tabsEl.offsetLeft < strip.scrollLeft || tabsEl.offsetLeft + tabsEl.offsetWidth > strip.scrollLeft + strip.clientWidth)) {
     strip.scrollLeft = Math.max(0, tabsEl.offsetLeft - 16);
   }
@@ -161,19 +161,19 @@ function devOverview(b) {
   const row = data.devices.find((x) => x.id === d.id) || {};
   const fwUpd = d.updates?.stable;
   const device = infoCard("Device", [
-    dgItem("Type", `${esc(d.model_name || d.app)}<span class="sf-sub">${esc(d.model)} · ${esc(d.app)} · Gen${esc(d.gen)}</span>${stackNote(row)}`),
+    dgItem("Type", `${esc(d.model_name || d.app)}<span class="rr-sub">${esc(d.model)} · ${esc(d.app)} · Gen${esc(d.gen)}</span>${stackNote(row)}`),
     dgItem("Profile", d.profile ? esc(d.profile) : `<span class="text-secondary">–</span>`),
     dgItem("Policy profiles", profileAssignHtml(b)),
     dgItem("MAC", `<span class="font-monospace">${esc(d.mac || "–")}</span>`),
     dgItem("Device ID", `<span class="font-monospace">${esc(d.id)}</span>`),
     dgItem("Firmware", `<span class="font-monospace">${esc(d.ver)}</span>${fwUpd ? ` ${badge("info", `→ ${fwUpd}`, "Stable update available")}` : ""}`),
-    dgItem("RPC methods", b.methods ? `${b.methods.length}<span class="sf-sub" title="${esc(b.methods.join("\n"))}">from Shelly.ListMethods</span>` : `<span class="text-secondary">unknown</span>`),
+    dgItem("RPC methods", b.methods ? `${b.methods.length}<span class="rr-sub" title="${esc(b.methods.join("\n"))}">from Shelly.ListMethods</span>` : `<span class="text-secondary">unknown</span>`),
   ]);
   const network = infoCard("Network", [
     dgItem("Address", `<a class="font-monospace" href="http://${esc(d.host)}/" target="_blank" rel="noopener noreferrer">${esc(d.host)}</a>${addressBadge(row)}`),
     dgItem("Wi-Fi", esc(d.status?.wifi?.ssid || "–")),
     dgItem("Signal", rssiBadge(d.status?.wifi?.rssi)),
-    b.address_block ? dgItem("Address block", `<span class="font-monospace">${esc(b.address_block.range)}</span>${b.address_block.name ? `<span class="sf-sub">${esc(b.address_block.name)}</span>` : ""}`) : "",
+    b.address_block ? dgItem("Address block", `<span class="font-monospace">${esc(b.address_block.range)}</span>${b.address_block.name ? `<span class="rr-sub">${esc(b.address_block.name)}</span>` : ""}`) : "",
   ]);
   const status = infoCard("Status", [
     dgItem("Status", statusBadge(d)),
@@ -186,7 +186,7 @@ function devOverview(b) {
   const findings = `<div class="card h-100"><div class="card-header"><h3 class="card-title">Findings</h3>
       <div class="card-actions">${b.findings.length ? badge("warn", b.findings.length) : badge("ok", "none")}</div></div>
     ${fs.length ? cardTable(["Path", "Expected", "Actual"], fs.map((f) => `<tr>
-        <td class="font-monospace small">${esc(f.path)}<span class="sf-sub">${esc(KIND_LABEL[f.kind] || f.kind)} · ${esc(f.source)}</span></td>
+        <td class="font-monospace small">${esc(f.path)}<span class="rr-sub">${esc(KIND_LABEL[f.kind] || f.kind)} · ${esc(f.source)}</span></td>
         <td>${valHtml(f.expected)}</td><td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td></tr>`).join(""))
       : `<div class="card-body text-secondary">Matches the policy.</div>`}
     ${b.findings.length ? `<div class="card-footer"><a href="${devHref(d.id, "findings")}">${b.findings.length > fs.length ? `All ${b.findings.length} findings` : "Findings and policy rules"}</a></div>` : ""}</div>`;
@@ -205,7 +205,7 @@ const VIA_TEXT = { match: "by match", assigned: "assigned", excluded: "excluded"
 function profileAssignHtml(b) {
   const list = b.profile_assignment || [];
   const on = list.filter((p) => p.via === "match" || p.via === "assigned");
-  const chips = on.map((p) => `<span class="badge bg-azure-lt sf-chip me-1 mb-1" title="${esc(VIA_TEXT[p.via])}">
+  const chips = on.map((p) => `<span class="badge bg-azure-lt rr-chip me-1 mb-1" title="${esc(VIA_TEXT[p.via])}">
       <a class="text-reset text-decoration-none" href="${profHref(p.name)}">${esc(p.name)}</a>${p.via === "assigned" ? ` <span class="small fw-normal">(assigned)</span>` : ""}
       <button type="button" data-unassign="${esc(p.name)}" aria-label="Remove from ${esc(p.name)}" title="Remove this device from the profile">×</button></span>`).join("");
   const off = list.filter((p) => !on.includes(p));
@@ -229,7 +229,7 @@ async function assignDevice(name, add) {
 const COVER_ERR = { obstruction: "obstruction", overpower: "power limit", overcurrent: "current limit", overvoltage: "overvoltage",
   undervoltage: "undervoltage", overtemp: "overtemperature", safety_switch: "safety switch" };
 function coverCard(c, d) {
-  const num = (v, unit, digits = 0) => (typeof v === "number" ? `<span class="sf-val">${esc(v.toFixed(digits))} ${esc(unit)}</span>` : `<span class="text-secondary">–</span>`);
+  const num = (v, unit, digits = 0) => (typeof v === "number" ? `<span class="rr-val">${esc(v.toFixed(digits))} ${esc(unit)}</span>` : `<span class="text-secondary">–</span>`);
   const L = c.limits || {};
   const cal = c.calibrated === true ? badge("ok", "calibrated") : c.calibrated === false ? badge("warn", "not calibrated", "Run the calibration in the device web UI") : "";
   const state = c.state ? `${esc(c.state)}${c.calibrated && typeof c.position === "number" ? ` · ${esc(c.position)} %` : ""}` : "–";
@@ -245,12 +245,12 @@ function coverCard(c, d) {
     <div class="card-body"><div class="datagrid">
       ${dgItem("State", state)}
       ${dgItem("Errors", errs)}
-      ${dgItem("Power", `${num(c.apower, "W", 1)}<span class="sf-sub">${esc(powerNote)}</span>`)}
+      ${dgItem("Power", `${num(c.apower, "W", 1)}<span class="rr-sub">${esc(powerNote)}</span>`)}
       ${dgItem("Voltage · current", `${num(c.voltage, "V")} · ${num(c.current, "A", 2)}`)}
       ${typeof c.temperature === "number" ? dgItem("Temperature", num(c.temperature, "°C", 1)) : ""}
       ${dgItem("Power limit", num(L.power_limit, "W"))}
       ${dgItem("Obstruction detection", obstText)}
-      ${dgItem("Obstruction threshold", `${num(L.power_thr, "W")}${typeof L.holdoff === "number" ? `<span class="sf-sub">hold-off ${esc(L.holdoff)} s</span>` : ""}`)}
+      ${dgItem("Obstruction threshold", `${num(L.power_thr, "W")}${typeof L.holdoff === "number" ? `<span class="rr-sub">hold-off ${esc(L.holdoff)} s</span>` : ""}`)}
       ${dgItem("Travel time open · close", `${num(L.maxtime_open, "s", 1)} · ${num(L.maxtime_close, "s", 1)}`)}
     </div>
     <div class="text-secondary small mt-3">Power is measured when RelayRoster reads the device. To see the running power, press
@@ -268,7 +268,7 @@ function peerCard(p, d) {
   const rows = [
     ...p.diffs.map((r) => `<tr>
       <td class="font-monospace small">${esc(r.path)}</td>
-      <td class="sf-outlier">${valHtml(r.value)}</td>
+      <td class="rr-outlier">${valHtml(r.value)}</td>
       <td title="${esc(others(r))}">${r.has_majority ? valHtml(r.majority) : `<span class="text-secondary">no majority</span>`}</td></tr>`),
   ].join("");
   const key = `${p.app}|${p.profile || ""}`;
@@ -282,10 +282,10 @@ function settingVal(f) {
   const v = f.value;
   if (v === null || v === undefined) return `<span class="text-secondary">–</span>`;
   if (f.kind === "bool" && typeof v === "boolean") return v ? badge("ok", "on") : badge("neutral", "off");
-  if (f.kind === "number" && typeof v === "number") return `<span class="sf-val">${esc(v)}${f.unit ? ` ${esc(f.unit)}` : ""}</span>`;
+  if (f.kind === "number" && typeof v === "number") return `<span class="rr-val">${esc(v)}${f.unit ? ` ${esc(f.unit)}` : ""}</span>`;
   if (f.kind === "enum") {
     const opts = (f.options || []).map((o) => (o === null ? "none" : o)).join(", ");
-    return `<span class="sf-val"${opts ? ` title="Options: ${esc(opts)}"` : ""}>${esc(fmtVal(v))}</span>`;
+    return `<span class="rr-val"${opts ? ` title="Options: ${esc(opts)}"` : ""}>${esc(fmtVal(v))}</span>`;
   }
   if (v === "") return `<span class="text-secondary">empty</span>`;
   return valHtml(v);
@@ -302,7 +302,7 @@ function settingNotes(f) {
 // Mark a deviation directly at the setting instead of as a counter in the header
 const fieldWarn = (f) => (f.policy && !f.policy.ok) || f.peer ? ` ${badge("warn", "!", "Differs from the policy or from most devices of this type")}` : "";
 const settingRow = (f) => `<tr>
-    <td>${esc(f.label)}${fieldWarn(f)}<span class="sf-sub">${esc(f.path)}</span></td>
+    <td>${esc(f.label)}${fieldWarn(f)}<span class="rr-sub">${esc(f.path)}</span></td>
     <td class="text-end text-nowrap">${settingVal(f)}</td>
     <td class="text-end">${settingNotes(f)}</td></tr>`;
 
@@ -315,8 +315,8 @@ function settingEditRow(f) {
   if (f.peer?.has_majority && JSON.stringify(f.peer.majority) !== JSON.stringify(f.policy?.value)) use.push(cfgUseBtn(f, f.peer.majority, "Most devices of this type"));
   const notes = [f.policy && !f.policy.ok ? badge("warn", `policy: ${fmtVal(f.policy.expected)}`, f.policy.source) : "",
     f.peer ? (f.peer.has_majority ? badge("accent", `type: ${fmtVal(f.peer.majority)}`, "Most devices of this type") : badge("accent", "type: no majority")) : "", ...use].filter(Boolean).join(" ");
-  return `<tr class="${cfgHas(f.path) ? "sf-changed" : ""}" data-cfg-row="${esc(f.path)}">
-    <td>${esc(f.label)}${fieldWarn(f)}<span class="sf-sub">${esc(f.path)}</span></td>
+  return `<tr class="${cfgHas(f.path) ? "rr-changed" : ""}" data-cfg-row="${esc(f.path)}">
+    <td>${esc(f.label)}${fieldWarn(f)}<span class="rr-sub">${esc(f.path)}</span></td>
     <td class="text-end">${cfgInput(f)}${err ? `<div class="invalid-feedback d-block text-start">${esc(err)}</div>` : ""}</td>
     <td class="text-end">${notes}</td></tr>`;
 }
@@ -335,28 +335,28 @@ function devSettings(b) {
     const editing = editable && allowConfig && cfgEdit.open.has(sec.id);
     const row = editing ? settingEditRow : settingRow;
     const edit = !editable ? ""
-      : !allowConfig ? `<a class="btn btn-sm sf-off" href="#settings" aria-disabled="true" title="Config changes are off. Turn them on in Settings">${ICON.pencil}Edit</a>`
+      : !allowConfig ? `<a class="btn btn-sm rr-off" href="#settings" aria-disabled="true" title="Config changes are off. Turn them on in Settings">${ICON.pencil}Edit</a>`
         : `<button class="btn btn-sm${editing ? " btn-primary" : ""}" type="button" data-cfg-edit="${esc(sec.id)}">${editing ? "Done" : `${ICON.pencil}Edit`}</button>`;
     const drafts = sec.fields.filter((f) => cfgHas(f.path)).length;
-    return { id: sec.id, title: sec.title, notes, state: sec.enabled, drafts, html: `<div class="card${editing ? " sf-editing" : ""}" data-cfg-card="${esc(sec.id)}">
-      <div class="card-header"><div class="sf-minw0"><h3 class="card-title">${esc(sec.title)}</h3>${compAbout(sec.id)}</div><div class="card-actions btn-list flex-nowrap">${compDocLink(sec.id)}${flag}${edit}</div></div>
-      ${active.length ? `<div class="table-responsive"><table class="table table-vcenter card-table sf-settings-table"><tbody>${active.map(row).join("")}</tbody></table></div>` : ""}
-      ${idle.length ? `<details class="sf-peer-more border-top"${editing && idle.some((f) => f.editable) ? " open" : ""}><summary class="card-body py-2 text-secondary small">${idle.length} setting${idle.length === 1 ? "" : "s"} without effect (needs ${esc(needs)})</summary>
-        <div class="table-responsive"><table class="table table-vcenter card-table sf-settings-table sf-hidden"><tbody>${idle.map(row).join("")}</tbody></table></div></details>` : ""}
+    return { id: sec.id, title: sec.title, notes, state: sec.enabled, drafts, html: `<div class="card${editing ? " rr-editing" : ""}" data-cfg-card="${esc(sec.id)}">
+      <div class="card-header"><div class="rr-minw0"><h3 class="card-title">${esc(sec.title)}</h3>${compAbout(sec.id)}</div><div class="card-actions btn-list flex-nowrap">${compDocLink(sec.id)}${flag}${edit}</div></div>
+      ${active.length ? `<div class="table-responsive"><table class="table table-vcenter card-table rr-settings-table"><tbody>${active.map(row).join("")}</tbody></table></div>` : ""}
+      ${idle.length ? `<details class="rr-peer-more border-top"${editing && idle.some((f) => f.editable) ? " open" : ""}><summary class="card-body py-2 text-secondary small">${idle.length} setting${idle.length === 1 ? "" : "s"} without effect (needs ${esc(needs)})</summary>
+        <div class="table-responsive"><table class="table table-vcenter card-table rr-settings-table rr-hidden"><tbody>${idle.map(row).join("")}</tbody></table></div></details>` : ""}
     </div>` };
   });
   const info = s.info.length ? `<div class="card"><div class="card-header"><h3 class="card-title">Device info</h3>
       <div class="card-actions text-secondary small">Set by the device or by calibration, cannot be changed here</div></div>
-      <div class="table-responsive"><table class="table table-vcenter card-table sf-settings-table sf-hidden"><tbody>${s.info.map((f) => `<tr>
-        <td>${esc(f.section)} · ${esc(f.label)}<span class="sf-sub">${esc(f.path)}</span></td>
+      <div class="table-responsive"><table class="table table-vcenter card-table rr-settings-table rr-hidden"><tbody>${s.info.map((f) => `<tr>
+        <td>${esc(f.section)} · ${esc(f.label)}<span class="rr-sub">${esc(f.path)}</span></td>
         <td class="text-end text-nowrap">${settingVal(f)}</td>
         <td class="text-end">${badge("neutral", f.reason === "read_only" ? "read-only" : "managed")}</td></tr>`).join("")}</tbody></table></div></div>` : "";
   const scripts = b.snapshot?.data?.scripts || [];
   const cfg = b.snapshot?.data?.config;
   const extra = `<div class="card card-body">
       ${scripts.length ? `<details class="mt-1"><summary class="text-secondary">Scripts (${scripts.length})</summary>${scripts.map((sc) =>
-        `<div class="mt-2 font-monospace small">${esc(sc.name)} ${sc.enable ? badge("ok", "enabled") : badge("neutral", "off")}</div><pre class="sf-json mt-1">${esc(sc.code)}</pre>`).join("")}</details>` : ""}
-      <details class="mt-2"><summary class="text-secondary">Raw configuration (Shelly.GetConfig)</summary><pre class="sf-json mt-2">${esc(cfg ? JSON.stringify(cfg, null, 2) : "–")}</pre></details>
+        `<div class="mt-2 font-monospace small">${esc(sc.name)} ${sc.enable ? badge("ok", "enabled") : badge("neutral", "off")}</div><pre class="rr-json mt-1">${esc(sc.code)}</pre>`).join("")}</details>` : ""}
+      <details class="mt-2"><summary class="text-secondary">Raw configuration (Shelly.GetConfig)</summary><pre class="rr-json mt-2">${esc(cfg ? JSON.stringify(cfg, null, 2) : "–")}</pre></details>
     </div>`;
   const intro = allowConfig
     ? `From the backup of ${esc(fmtTime(taken))}. „Edit“ collects changes as a draft; nothing is written before you review and confirm them.`
@@ -371,9 +371,9 @@ function devSettings(b) {
       <span class="flex-fill text-truncate">${esc(x.title)}</span>
       ${x.drafts ? badge("info", x.drafts, "Unsaved changes") : ""}${x.notes ? badge("warn", x.notes, "Fields that differ from the policy or the type") : ""}${x.state === true ? badge("ok", "on") : x.state === false ? badge("neutral", "off") : ""}</a>`).join("");
   return `<p class="text-secondary small">${intro} Badges mark values that differ from the policy or from most devices of this type.</p>
-    <div id="cfgBar" class="sf-cfg-bar">${cfgBarHtml()}</div>
-    <div class="row g-3"><div class="col-md-4 col-lg-3"><div class="list-group sf-cfg-nav">${nav}</div></div>
-      <div class="col-md-8 col-lg-9 sf-cfg-main">${secs.find((x) => x.id === pick).html}</div></div>`;
+    <div id="cfgBar" class="rr-cfg-bar">${cfgBarHtml()}</div>
+    <div class="row g-3"><div class="col-md-4 col-lg-3"><div class="list-group rr-cfg-nav">${nav}</div></div>
+      <div class="col-md-8 col-lg-9 rr-cfg-main">${secs.find((x) => x.id === pick).html}</div></div>`;
 }
 let cfgSel = { id: null, sec: null };   // selected component in the Settings tab
 
@@ -434,7 +434,7 @@ function devFindings(b) {
     : `<div class="card"><div class="card-body text-secondary">No rules.</div></div>`;
   const na = (b.not_applicable || []).length ? `<h3 class="mt-4">Rules that do not apply to this model (${b.not_applicable.length})</h3>
     <div class="card">${cardTable(["Pattern", "Expected", "Source"], b.not_applicable.map((n) => `<tr class="text-secondary">
-      <td class="font-monospace small">${esc(n.path)}<span class="sf-sub">${esc(n.note)}</span></td><td>${valHtml(n.expected)}</td><td class="small">${ruleSource(n.source)}</td></tr>`).join(""))}
+      <td class="font-monospace small">${esc(n.path)}<span class="rr-sub">${esc(n.note)}</span></td><td>${valHtml(n.expected)}</td><td class="small">${ruleSource(n.source)}</td></tr>`).join(""))}
     <div class="card-footer text-secondary small">No device of this model has these settings. They do not count as findings.</div></div>` : "";
   const applyBtns = (b.profile_assignment || []).filter((p) => p.via === "match" || p.via === "assigned")
     .map((p) => `<button class="btn btn-sm" type="button" data-apply-prof="${esc(p.name)}">Apply ${esc(p.name)}…</button>`).join(" ");
@@ -517,9 +517,9 @@ function devChanges(b) {
     const detail = a.action === "config" ? rest.join(" · ") : a.detail;
     const val = (v) => { if (a.action !== "config") return esc(v || ""); try { return esc(fmtVal(JSON.parse(v))); } catch { return esc(v || ""); } };
     return `<tr><td class="text-nowrap">${esc(fmtTime(a.at))}</td>
-      <td>${esc(what[a.action] || a.action)}${path ? `<span class="sf-sub">${esc(path)}</span>` : ""}</td>
+      <td>${esc(what[a.action] || a.action)}${path ? `<span class="rr-sub">${esc(path)}</span>` : ""}</td>
       <td>${a.action === "reboot" || a.action === "auth" ? `<span class="text-secondary">–</span>`
-        : `${a.old ? val(a.old) : esc(a.action === "rename" ? "(no name)" : "–")}<span class="sf-arrow">→</span>${val(a.new)}`}</td>
-      <td>${a.ok ? badge("ok", "ok") : badge("bad", "failed")}${detail ? `<span class="sf-sub">${esc(detail)}</span>` : ""}</td></tr>`;
+        : `${a.old ? val(a.old) : esc(a.action === "rename" ? "(no name)" : "–")}<span class="rr-arrow">→</span>${val(a.new)}`}</td>
+      <td>${a.ok ? badge("ok", "ok") : badge("bad", "failed")}${detail ? `<span class="rr-sub">${esc(detail)}</span>` : ""}</td></tr>`;
   }).join(""))}</div>`;
 }

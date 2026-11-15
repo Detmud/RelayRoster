@@ -74,24 +74,24 @@ function renderApplyPreview() {
   const plans = applyCtx.plans;
   const writable = plans.filter((p) => Object.keys(p.changes || {}).length);
   const rows = plans.map((p, i) => {
-    const head = `<tr class="sf-devrow"><td colspan="5">${devLink(p.device_id, p.name || p.device_id)}
+    const head = `<tr class="rr-devrow"><td colspan="5">${devLink(p.device_id, p.name || p.device_id)}
       <span class="text-secondary small fw-normal">${esc(p.model_name || "")} · ${esc(p.host || "")}${p.note ? ` · ${esc(p.note)}` : ""}</span></td></tr>`;
     const body = (p.rows || []).map((r) => {
       const [kind, text] = APPLY_STATUS[r.status] || ["neutral", r.status];
       const can = r.status === "change" && Object.prototype.hasOwnProperty.call(p.changes || {}, r.path);
-      return `<tr class="${can ? "" : "sf-skip"}">
+      return `<tr class="${can ? "" : "rr-skip"}">
         <td class="w-1">${can ? `<input class="form-check-input" type="checkbox" checked data-dev="${i}" data-apply-row="${esc(r.path)}" aria-label="Write ${esc(r.path)}">` : ""}</td>
-        <td class="font-monospace small">${esc(r.path)}<span class="sf-sub">${esc(r.label || "")}</span></td>
+        <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${esc(r.label || "")}</span></td>
         <td>${r.old === null && r.status !== "change" ? `<span class="text-secondary">–</span>` : valHtml(r.old)}</td>
         <td>${valHtml(r.new)}${r.unit ? ` <span class="text-secondary small">${esc(r.unit)}</span>` : ""}</td>
-        <td>${badge(kind, text, r.note || "")}${r.note && r.status !== "ok" ? `<span class="sf-sub">${esc(r.note)}</span>` : ""}</td></tr>`;
+        <td>${badge(kind, text, r.note || "")}${r.note && r.status !== "ok" ? `<span class="rr-sub">${esc(r.note)}</span>` : ""}</td></tr>`;
     }).join("");
-    return head + (body || `<tr class="sf-skip"><td></td><td colspan="4" class="text-secondary small">Nothing to write.</td></tr>`);
+    return head + (body || `<tr class="rr-skip"><td></td><td colspan="4" class="text-secondary small">Nothing to write.</td></tr>`);
   }).join("");
   const pol = applyCtx.policy;
   $("#applyBody").innerHTML = `
     ${allowConfig ? "" : `<div class="alert alert-warning">Writing is turned off. Turn on “Allow config changes” in <a href="#settings">Settings</a>; the preview works without it.</div>`}
-    <div class="card"><div class="table-responsive"><table class="table table-vcenter card-table sf-apply">
+    <div class="card"><div class="table-responsive"><table class="table table-vcenter card-table rr-apply">
       <thead><tr><th class="w-1"><input class="form-check-input" type="checkbox" id="applyAll" checked aria-label="Select all"></th>
         <th>Setting</th><th>Current</th><th>New</th><th>Status</th></tr></thead>
       <tbody>${rows || `<tr><td colspan="5" class="text-secondary">No devices.</td></tr>`}</tbody></table></div></div>
@@ -110,7 +110,7 @@ function renderApplyPreview() {
     $("#applyStart").disabled = n === 0 || !allowConfig;
     $("#applyCalls").innerHTML = Object.entries(sel).map(([id, ch]) => {
       const p = plans.find((x) => x.device_id === id);
-      return `<div class="mb-2"><b>${esc(p.name || id)}</b>${buildCalls(ch).map((c) => `<pre class="sf-apply">${esc(`${c.method} ${JSON.stringify(c.params)}`)}</pre>`).join("")}</div>`;
+      return `<div class="mb-2"><b>${esc(p.name || id)}</b>${buildCalls(ch).map((c) => `<pre class="rr-apply">${esc(`${c.method} ${JSON.stringify(c.params)}`)}</pre>`).join("")}</div>`;
     }).join("") || `<span class="text-secondary small">Nothing selected.</span>`;
     const skip = plans.length - writable.length;
     $("#applySummary").textContent = `${plural(plans.length, "device")} checked${skip ? ` · ${skip} without changes` : ""}`;
@@ -147,15 +147,15 @@ async function startApply() {
 function renderApplyJob(job) {
   if (!job) { $("#applyBody").innerHTML = `<p class="text-secondary mb-0">Nothing has been written yet.</p>`; return; }
   $("#applyTitle").textContent = job.title;
-  $("#applyBody").innerHTML = `<div class="card"><div class="table-responsive"><table class="table table-vcenter card-table sf-apply">
+  $("#applyBody").innerHTML = `<div class="card"><div class="table-responsive"><table class="table table-vcenter card-table rr-apply">
     <thead><tr><th>Device</th><th>Values</th><th>Result</th></tr></thead>
     <tbody>${job.items.map((it) => {
       const [kind, text] = JOB_STATUS[it.status] || ["neutral", it.status];
-      return `<tr><td>${devLink(it.device_id, it.name || it.device_id)}<span class="sf-sub">${esc(it.host)}</span></td>
+      return `<tr><td>${devLink(it.device_id, it.name || it.device_id)}<span class="rr-sub">${esc(it.host)}</span></td>
         <td class="small">${Object.entries(it.changes).map(([p, v]) => `<div><span class="font-monospace">${esc(p)}</span> → ${valHtml(v)}</div>`).join("")}</td>
         <td>${badge(kind, text)}${it.duration_s != null ? ` <span class="text-secondary small">${it.duration_s} s</span>` : ""}
           ${it.restart_required || it.restarted ? ` ${badge(it.restarted ? "ok" : "warn", it.restarted ? "restarted" : "restart required")}` : ""}
-          ${it.error ? `<span class="sf-sub text-red">${esc(it.error)}</span>` : ""}</td></tr>`;
+          ${it.error ? `<span class="rr-sub text-red">${esc(it.error)}</span>` : ""}</td></tr>`;
     }).join("")}</tbody></table></div></div>`;
   const c = job.counts || {};
   const parts = [c.done && `${c.done} ${job.restart_only ? "restarted" : "written"}`, c.failed && `${c.failed} failed`, c.skipped && `${c.skipped} skipped`].filter(Boolean);
@@ -179,7 +179,7 @@ function renderApplyJobBar(job) {
   const bar = $("#applyJobBar");
   if (!job?.running) { show(bar, false); return; }
   const cur = job.current;
-  bar.innerHTML = `<div class="d-flex align-items-center gap-3 flex-wrap"><div class="flex-fill sf-minw0">
+  bar.innerHTML = `<div class="d-flex align-items-center gap-3 flex-wrap"><div class="flex-fill rr-minw0">
       <strong>${esc(job.title)}</strong> · ${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}
       ${cur ? `<div class="small text-secondary">${esc(cur.name || cur.device_id)}: ${esc((JOB_STATUS[cur.status] || [0, cur.status])[1])}</div>` : ""}
     </div><button class="btn btn-sm" type="button" id="applyJobShow">Show</button></div>`;
@@ -288,7 +288,7 @@ function renderBulk() {
       ${bulk.target === "type" ? `<select class="form-select form-select-sm mb-2" id="bkType"><option value="">Choose…</option>${types.map((t) => `<option${t === bulk.type ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>` : ""}
       <label class="form-check"><input class="form-check-input" type="radio" name="bkTarget" value="pick"${bulk.target === "pick" ? " checked" : ""}>
         <span class="form-check-label">Choose devices</span></label>
-      ${bulk.target === "pick" ? `<div class="sf-pick border rounded p-2" style="max-height:18rem;overflow:auto">${bulk.devices.map((d) => `<label class="form-check mb-1">
+      ${bulk.target === "pick" ? `<div class="rr-pick border rounded p-2" style="max-height:18rem;overflow:auto">${bulk.devices.map((d) => `<label class="form-check mb-1">
           <input class="form-check-input" type="checkbox" data-bk-dev="${esc(d.id)}"${bulk.picked.has(d.id) ? " checked" : ""}>
           <span class="form-check-label">${esc(d.name || d.id)} <span class="text-secondary small">${esc(d.model_name || d.app)}${m && !has.has(d.id) ? " · does not have this setting" : ""}</span></span></label>`).join("")}</div>` : ""}
       <div class="form-hint mt-2">Devices without the setting are listed in the preview and left alone.</div>

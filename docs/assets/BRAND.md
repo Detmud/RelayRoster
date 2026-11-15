@@ -15,7 +15,7 @@ The mark combines a rooster (the roster/rooster wordplay), three list-like tail 
 
 | File | Purpose |
 | --- | --- |
-| inline in `app/static/index.html` and `login.html` (`.sf-logo`) | Square 24-unit navbar icon. The body uses `currentColor` (Tabler body color, so it follows light and dark mode); the comb uses the vermilion accent via `.sf-logo-accent` in `style.css`. Designed for small sizes, including 16 px. |
+| inline in `app/static/index.html` and `login.html` (`.rr-logo`) | Square 24-unit navbar icon. The body uses `currentColor` (Tabler body color, so it follows light and dark mode); the comb uses the vermilion accent via `.rr-logo-accent` in `style.css`. Designed for small sizes, including 16 px. |
 | `app/static/favicon.svg` | Same geometry with the brand accent. Navy on light browser tabs; soft white on dark tabs via `prefers-color-scheme`. |
 | `docs/assets/logo-light.svg` | Horizontal icon and RelayRoster wordmark for light backgrounds. |
 | `docs/assets/logo-dark.svg` | Matching horizontal lockup for dark backgrounds. |
@@ -34,5 +34,5 @@ UI uses tints of the same hue, chosen for WCAG AA contrast.
 | Light | `#142D4E` midnight navy (13.9:1 with white text) | `#2A5F9E` (6.5:1 on white) |
 | Dark | `#3E72B3` (4.9:1 with white text, 3.6:1 against the background) | `#8DB0E0` (8:1 on the background) |
 
-Vermilion (`--sf-accent`) is only an accent in the mark. It is not used for text (3.6:1 on white) or for buttons,
+Vermilion (`--rr-accent`) is only an accent in the mark. It is not used for text (3.6:1 on white) or for buttons,
 where it would read as danger.

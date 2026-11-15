@@ -33,10 +33,10 @@ function showPage(name, push = false) {
     if (on) $(".nav-link", li).setAttribute("aria-current", "page");
     else $(".nav-link", li).removeAttribute("aria-current");
   });
-  $$(".sf-tab").forEach((el) => show(el, el.id === `tab-${name}`));
+  $$(".rr-tab").forEach((el) => show(el, el.id === `tab-${name}`));
   $("#syncBtn").title = name === "device" ? "Read this device now" : "Read all known devices now";
   $$("[data-actions]").forEach((el) => show(el, el.dataset.actions === name));
-  $$("#syncGroup, .sf-syncinfo").forEach((el) => show(el, p.sync !== false));
+  $$("#syncGroup, .rr-syncinfo").forEach((el) => show(el, p.sync !== false));
   if (name === "device") {
     showDevice(devRoute()).catch((e) => showError(e.message));
   } else if (name === "profiles") {
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && $("#syncMenu").classList.contains("show")) { setSyncMenu(false); $("#syncMenuBtn").focus(); }
     if (ev.key === "Escape" && $("#sidebarMenu").classList.contains("show")) { setNav(false); $("#navToggle").focus(); }
-    if (ev.key === "Escape") $$(".sf-menu.show").forEach((m) => { setMenu(m, false); m.previousElementSibling?.focus(); });
+    if (ev.key === "Escape") $$(".rr-menu.show").forEach((m) => { setMenu(m, false); m.previousElementSibling?.focus(); });
   });
   $("#cancelBtn").addEventListener("click", cancelScan);
   $("#devFilter").addEventListener("input", (ev) => setView({ q: ev.target.value }));
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!ev.target.closest("#syncGroup")) setSyncMenu(false);
     // Menus with data-menu-toggle (device page): open and close, a click elsewhere closes
     const toggle = ev.target.closest("[data-menu-toggle]");
-    $$(".sf-menu.show").forEach((m) => { if (!toggle || m !== toggle.nextElementSibling) setMenu(m, false); });
+    $$(".rr-menu.show").forEach((m) => { if (!toggle || m !== toggle.nextElementSibling) setMenu(m, false); });
     if (toggle) { setMenu(toggle.nextElementSibling, !toggle.nextElementSibling.classList.contains("show")); return; }
     const act = ev.target.closest("[data-act]");
     if (act) {
