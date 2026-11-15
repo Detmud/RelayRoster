@@ -95,7 +95,7 @@ function renderApplyPreview() {
       <thead><tr><th class="w-1"><input class="form-check-input" type="checkbox" id="applyAll" checked aria-label="Select all"></th>
         <th>Setting</th><th>Current</th><th>New</th><th>Status</th></tr></thead>
       <tbody>${rows || `<tr><td colspan="5" class="text-secondary">No devices.</td></tr>`}</tbody></table></div></div>
-    ${pol ? `<div class="mt-3"><label class="form-check"><input class="form-check-input" type="checkbox" id="applyPolicy" checked>
+    ${pol ? `<div class="mt-3"><label class="form-check"><input class="form-check-input" type="checkbox" id="applyPolicy"${pol.unchecked ? "" : " checked"}>
         <span class="form-check-label">Also add the rule to <code>policy.yaml</code>: ${pol.scope === "baseline" ? "<b>baseline</b> (all devices)" : "<b>overrides</b> of each written device"}</span></label>
         <input class="form-control form-control-sm mt-1" id="applyComment" value="${esc(pol.comment)}" aria-label="Comment in policy.yaml">
         <div class="form-hint">With the rule in the policy, RelayRoster reports a device that drifts away again (e.g. after a factory reset). Untick for a one-time change.</div></div>` : ""}
@@ -198,6 +198,15 @@ const applyProfile = (name, ids) => openApply({ title: `Apply profile ${name}`, 
   request: { mode: "profile", profile: name, ...(ids ? { device_ids: ids } : {}) } });
 const fixAll = (path, value, ids) => openApply({ title: `Set ${path} on ${plural(ids.length, "device")}`, policy: null,
   request: { mode: "bulk", path, value, device_ids: ids } });
+// Peer comparison: write the majority value to the outliers. The rule in the policy is offered, but not ticked
+const usePeerMajority = (r, ids) => openApply({ title: `Set ${r.path} on ${plural(ids.length, "device")}`,
+  request: { mode: "bulk", path: r.path, value: r.majority, device_ids: ids },
+  policy: { scope: "overrides", path: r.path, value: r.majority, comment: `Peer comparison ${today()}`, unchecked: true } });
+// Peer comparison "Set…": Bulk change with the setting and the device type filled in, for another value
+function bulkFromPeer(r, g) {
+  Object.assign(bulk, { path: r.path.replace(/:\d+\./, ":*."), value: "", target: "type", type: g.model_name || g.app });
+  location.hash = "#bulk";
+}
 
 // ---- Bulk change page ----
 let bulk = { loaded: false, paths: [], devices: [], path: "", value: "", target: "all", type: "", picked: new Set(), preset: null };

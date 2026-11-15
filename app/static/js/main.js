@@ -146,6 +146,15 @@ document.addEventListener("DOMContentLoaded", () => {
       renderPeers();
       return;   // the link itself changes the page
     }
+    const peerBtn = ev.target.closest("[data-peer-major], [data-peer-set]");
+    if (peerBtn) {
+      const g = data.peers.find((x) => peerKey(x) === peerBtn.dataset.peerKey);
+      const r = g?.diffs[+peerBtn.dataset.peerRow];
+      if (!r) return;
+      if ("peerSet" in peerBtn.dataset) bulkFromPeer(r, g);
+      else if (peerFixTargets(r).length) usePeerMajority(r, peerFixTargets(r));
+      return;
+    }
     const fix = ev.target.closest("[data-fix]");
     if (fix) {
       const ids = fixGroups().get(fix.dataset.fix) || [];
