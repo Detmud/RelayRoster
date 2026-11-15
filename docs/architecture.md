@@ -22,7 +22,7 @@ app/
   compare.py           Path matching, diffs, peer groups (peer_depends, READ_ONLY_PATHS, MANAGED_PATHS), versions
   devicepage.py        Device page: schema per component (type, unit, options), settings view, peer outliers
   report.py            Overview for the UI (findings, firmware), classifying missing settings
-  models.py            Order number to product name, MAC format
+  models.py            Order number to device type (kind, variant, suffix), MAC format
   default_policy.yaml  Template, copied to /data/policy.yaml on first start
   static/              index.html, login.html, app.js (core) and js/*.js per area, style.css, theme.js
 tests/

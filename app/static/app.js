@@ -56,12 +56,15 @@ function rssiBadge(rssi) {
   if (rssi == null) return `<span class="text-secondary">–</span>`;
   return badge(rssi >= -65 ? "ok" : rssi >= -75 ? "warn" : "bad", `${rssi} dBm`);
 }
+// Device type: one line for filters, sorting and group headings ("Shelly 2PM · Gen2 · Pro"); in tables the
+// function comes first (typeLabel, "Shelly 2PM") and generation, variant and suffix follow below (typeSub)
 const typeName = (d) => d.model_name || d.app || "?";
 // Operating mode of the firmware: profile (cover, switch) and enabled stacks (Matter, Zigbee).
 // Own colour, saying nothing about the connection; the tooltip shows the raw value.
 const modeBadges = (d) => [d.profile ? badge("mode", d.profile, "Device profile") : "",
   ...(d.stacks || []).map((s) => badge("mode", s.label, s.detail))].filter(Boolean).join(" ");
-const typeLabel = (d) => { const m = modeBadges(d); return `${esc(typeName(d))}${m ? ` ${m}` : ""}`; };
+const typeLabel = (d) => { const m = modeBadges(d); return `${esc(d.type_name || typeName(d))}${m ? ` ${m}` : ""}`; };
+const typeSub = (d) => `<span class="rr-sub" title="${esc([d.model, d.app].filter(Boolean).join(" · "))}">${esc(d.type_sub || "")}</span>`;
 // Type headings: stacks of the devices in a group, count in the tooltip
 function groupStackBadges(devs) {
   const rows = (devs || []).map((x) => data.devices.find((r) => r.id === x.id)).filter(Boolean);

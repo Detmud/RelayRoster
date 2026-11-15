@@ -53,13 +53,13 @@ def test_overview_and_detail():
         assert plus1["findings"] >= 2, "tz and wifi.ap from the default policy"
         cover = next(d for d in body["devices"] if d["id"] == "shelly2pmg4-58e6c5000202")
         assert "Shutter" in cover["profiles"]
-        assert cover["model_name"] == "Shelly 2PM Gen4" and cover["mac"] == "58:E6:C5:00:02:02"
+        assert cover["model_name"] == "Shelly 2PM · Gen4" and cover["type_name"] == "Shelly 2PM" and cover["mac"] == "58:E6:C5:00:02:02"
         assert any(f["path"] == "cover:0.obstruction_detection.enable" and f["device_id"] == cover["id"]
                    for f in body["findings"])
         assert any(g["app"] == "S2PMG4" and g["diffs"] for g in body["peers"])
-        assert any(g["model_name"] == "Shelly 2PM Gen4" for g in body["peers"])
+        assert any(g["model_name"] == "Shelly 2PM · Gen4" for g in body["peers"])
         fw = {g["app"]: g for g in body["firmware"]}
-        assert fw["S2PMG4"]["model_name"] == "Shelly 2PM Gen4"
+        assert fw["S2PMG4"]["model_name"] == "Shelly 2PM · Gen4"
         assert fw["S2PMG4"]["devices"][0]["mac"].count(":") == 5
         assert fw["PlusI4"]["uniform"] is False and fw["PlusI4"]["stable_available"] == "1.7.6"
 
@@ -68,7 +68,7 @@ def test_overview_and_detail():
         det = r.json()
         assert det["snapshot"]["data"]["config"]["cover:0"]["in_mode"] == "dual"
         assert any(x["source"] == "Profile: Shutter" for x in det["rules"])
-        assert det["device"]["model_name"] == "Shelly 2PM Gen4" and det["device"]["mac"] == "58:E6:C5:00:02:02"
+        assert det["device"]["model_name"] == "Shelly 2PM · Gen4" and det["device"]["type_sub"] == "Gen4" and det["device"]["mac"] == "58:E6:C5:00:02:02"
         assert c.get("/api/devices/gibtsnicht").status_code == 404
 
         st = c.get("/api/state").json()

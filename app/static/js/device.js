@@ -161,7 +161,7 @@ function devOverview(b) {
   const row = data.devices.find((x) => x.id === d.id) || {};
   const fwUpd = d.updates?.stable;
   const device = infoCard("Device", [
-    dgItem("Type", `${esc(d.model_name || d.app)}<span class="rr-sub">${esc(d.model)} · ${esc(d.app)} · Gen${esc(d.gen)}</span>${stackNote(row)}`),
+    dgItem("Type", `${esc(d.type_name || d.model_name || d.app)}<span class="rr-sub">${[d.type_sub, d.model, d.app].filter(Boolean).map(esc).join(" · ")}</span>${stackNote(row)}`),
     dgItem("Profile", d.profile ? esc(d.profile) : `<span class="text-secondary">–</span>`),
     dgItem("Policy profiles", profileAssignHtml(b)),
     dgItem("MAC", `<span class="font-monospace">${esc(d.mac || "–")}</span>`),

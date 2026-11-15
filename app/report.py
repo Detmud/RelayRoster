@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from . import compare, policy as pol
-from .models import format_mac, model_name
+from .models import format_mac, model_name, type_fields
 from .store import Store
 
 
@@ -106,7 +106,7 @@ def build(store: Store, policy_data: dict[str, Any] | None, poll_minutes: int) -
             "mac": format_mac(d.get("mac")),
             "app": d.get("app"),
             "model": d.get("model"),
-            "model_name": model_name(d.get("model"), d.get("app")),
+            **type_fields(d),
             "gen": d.get("gen"),
             "profile": d.get("profile"),
             "ver": d.get("ver"),
@@ -189,7 +189,7 @@ def classify_missing(devices: list[dict[str, Any]], configs: dict[str, dict[str,
                        "note": "No device of this model has this setting"})
             continue
         vers = sorted({d.get("ver") for d in same if d.get("ver")}, key=compare.version_key)
-        name = model_name(dev.get("model"), dev.get("app"))
+        name = model_name(dev.get("model"), dev.get("app"), dev.get("gen"))
         if vers and dev.get("ver") and compare.version_key(dev["ver"]) < compare.version_key(vers[-1]):
             note = (f"Present on {len(same)} other {name} with firmware {vers[0]}"
                     + (f" to {vers[-1]}" if len(vers) > 1 else "") + ". Update the firmware.")
@@ -209,7 +209,7 @@ def firmware_view(devices: list[dict[str, Any]], newest: dict[str, str]) -> list
         out.append({
             "app": app,
             "model": members[0].get("model"),
-            "model_name": model_name(members[0].get("model"), app),
+            "model_name": model_name(members[0].get("model"), app, members[0].get("gen")),
             "newest_installed": newest.get(app),
             "stable_available": stable[-1] if stable else None,
             "uniform": len({m.get("ver") for m in members}) == 1,
@@ -219,4 +219,5 @@ def firmware_view(devices: list[dict[str, Any]], newest: dict[str, str]) -> list
                 key=lambda x: compare.version_key(x["ver"]),
             ),
         })
-    return out
+    # like the type column: kind, then generation, then variant
+    return sorted(out, key=lambda g: (g["model_name"].lower(), g["app"]))

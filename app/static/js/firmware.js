@@ -131,7 +131,7 @@ async function cancelFwJob() {
 function renderBackups() {
   $("#bkTable tbody").innerHTML = data.devices.map((d) => `<tr class="cursor-pointer" data-id="${esc(d.id)}" data-section="backups">
     <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
-    <td>${typeLabel(d)}</td>
+    <td>${typeLabel(d)}${typeSub(d)}</td>
     <td class="text-end">${d.snapshot_count}</td>
     <td>${esc(fmtTime(d.last_change))}</td>
     <td class="text-secondary">${esc(ago(d.last_confirmed))}</td>

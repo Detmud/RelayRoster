@@ -5,7 +5,7 @@
 | Page | Content |
 |---|---|
 | Dashboard | Tiles for devices, policy deviations, peer differences, firmware updates and unreachable devices; each opens the matching filtered view |
-| Devices | All devices with product name, MAC, address, firmware, Wi-Fi signal, matching profiles, deviations, reachability. Sortable and filterable; the view is part of the URL |
+| Devices | All devices with type (function first, e.g. "Shelly 2PM", with generation, Pro/Mini and suffix below), MAC, address, firmware, Wi-Fi signal, matching profiles, deviations, reachability. Sortable and filterable; the view is part of the URL |
 | Device page | `#device/<id>[/<tab>]`: overview, settings per component (editable), findings, backups, changes (audit log) |
 | Findings | Target vs. actual from `policy.yaml`, per device with path, target, actual value and the rule that applies |
 | Peer comparison | Devices of the same type compared with each other, **without** any policy. Shows every effective setting that is not the same on all of them and marks the outliers |

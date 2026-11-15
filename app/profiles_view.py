@@ -18,7 +18,7 @@ def generalize(path: str) -> str:
 
 def device_row(d: dict[str, Any]) -> dict[str, Any]:
     return {"id": d["id"], "name": d.get("name"), "host": d.get("host"), "app": d.get("app"),
-            "model": d.get("model"), "model_name": model_name(d.get("model"), d.get("app")),
+            "model": d.get("model"), "model_name": model_name(d.get("model"), d.get("app"), d.get("gen")),
             "profile": d.get("profile"), "gen": d.get("gen")}
 
 
@@ -26,7 +26,7 @@ def choices(devices: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     """Values actually present per match field, with counts. app and model with product name."""
     out: dict[str, dict[str, dict[str, Any]]] = {k: {} for k in ("app", "model", "profile", "gen", "name", "id")}
     for d in devices:
-        label = model_name(d.get("model"), d.get("app"))
+        label = model_name(d.get("model"), d.get("app"), d.get("gen"))
         for key in out:
             val = d.get(key)
             if val in (None, ""):

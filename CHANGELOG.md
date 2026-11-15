@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Device types show the function first: "Shelly 2PM" with "Gen4" or "Gen2 · Pro" below instead of "Shelly 2PM Gen4"
+  or "Shelly Pro 2PM". "Plus" is shown as Gen2; Pro and Mini as form factor; DC and the plug types as suffix.
+  Group headings (firmware, peer comparison, bulk change) read "Shelly 2PM · Gen4". The order number is in the
+  tooltip, the device details and the search. The API adds `kind`, `variant`, `suffix`, `type_name` and `type_sub`
+- Navigation: "Roster" instead of the old "Fleet"; Bulk change moved to Roster; "Sync now" only on pages with
+  device data
+- Findings: columns line up across devices; no repeated source text next to the badge
+- New colour palette for light and dark mode (see docs/assets/BRAND.md)
+
 ## [1.0.1] - 2026-11-15
 
 - Trademark notice in the footer of the app and on the sign-in page
