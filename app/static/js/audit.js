@@ -14,7 +14,7 @@ async function showAudit() {
     <option value="">${all}</option>${opts.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
   const val = (a, v) => { if (a.action !== "config") return esc(v || ""); try { return esc(fmtVal(JSON.parse(v))); } catch { return esc(v || ""); } };
   const rows = body.entries.map((a) => `<tr><td class="text-nowrap">${esc(fmtTime(a.at))}</td>
-      <td>${a.device_id ? devLink(a.device_id, a.device_name || a.device_id) : `<span class="text-secondary">Fleet</span>`}</td>
+      <td>${a.device_id ? devLink(a.device_id, a.device_name || a.device_id) : `<span class="text-secondary">All devices</span>`}</td>
       <td>${esc(AUDIT_WHAT[a.action] || a.action)}</td>
       <td>${a.old || a.new ? `${val(a, a.old) || "–"}<span class="sf-arrow">→</span>${val(a, a.new)}` : `<span class="text-secondary">–</span>`}</td>
       <td>${a.ok ? badge("ok", "ok") : badge("bad", "failed")}${a.detail ? `<span class="sf-sub">${esc(a.detail)}</span>` : ""}</td></tr>`).join("");

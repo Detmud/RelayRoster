@@ -273,7 +273,7 @@ function renderBulk() {
         <input class="form-control font-monospace" id="bkPath" list="bkPaths" value="${esc(bulk.path)}" placeholder="sys.sntp.server" autocomplete="off">
         <datalist id="bkPaths">${bulk.paths.map((p) => `<option value="${esc(p.path)}">${esc(p.label)} · ${p.devices.length} devices</option>`).join("")}</datalist>
         <div class="form-hint">Only settings RelayRoster may write. <code>cover:*</code> means every cover of a device.</div></div>
-      ${m ? `<div class="mb-3"><div class="form-label">Today in the fleet</div>${m.values.slice(0, 8).map((v) =>
+      ${m ? `<div class="mb-3"><div class="form-label">Current values</div>${m.values.slice(0, 8).map((v) =>
           `<span class="badge bg-secondary-lt me-1 mb-1">${esc(fmtVal(v.value))} × ${v.count}</span>`).join("")}
           ${m.values.length > 8 ? `<span class="text-secondary small">+${m.values.length - 8} more</span>` : ""}</div>`
         : bulk.path ? `<div class="alert alert-warning">No device reports <code>${esc(bulk.path)}</code> as a writable setting.</div>` : ""}

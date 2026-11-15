@@ -193,6 +193,9 @@ function fixGroups() {
   return groups;
 }
 
+// Source text is left out when it only repeats the badge (firmware findings: "Firmware")
+const sameWord = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
+
 function findingRows(fs, withNote, groups = null) {
   return fs.map((f) => {
     const ids = groups && f.kind === "mismatch" && f.fixable ? groups.get(fixKey(f)) || [] : null;
@@ -200,7 +203,7 @@ function findingRows(fs, withNote, groups = null) {
     <td class="font-monospace small">${esc(f.path)}${withNote && f.note ? `<span class="sf-sub">${esc(f.note)}</span>` : ""}</td>
     <td>${valHtml(f.expected)}</td>
     <td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td>
-    <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)} <span class="text-secondary small">${esc(f.source)}</span></td>
+    <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)}${sameWord(f.source, KIND_LABEL[f.kind] || f.kind) ? "" : ` <span class="text-secondary small">${esc(f.source)}</span>`}</td>
     ${groups ? `<td class="text-end text-nowrap">${ids ? `<button class="btn btn-sm" type="button" data-fix="${esc(fixKey(f))}"
       title="Write ${esc(fmtVal(f.target))} to ${esc(f.path)} on every device with this finding">${ids.length > 1 ? `Fix on all (${ids.length})` : "Fix"}</button>` : ""}</td>` : ""}
   </tr>`;
@@ -266,7 +269,8 @@ function renderDrift() {
         <div><h3 class="card-title">${devLink(id, d.name || id)}</h3><div class="text-secondary small">${esc(d.model_name || d.app || "")} · <span class="font-monospace" title="${esc(id)}">${esc(d.mac || id)}</span></div></div>
         <div class="card-actions"><a class="btn btn-sm" href="${devHref(id, "findings")}">Details</a></div>
       </div>
-      <div class="table-responsive"><table class="table table-vcenter card-table">
+      <div class="table-responsive"><table class="table table-vcenter card-table sf-findings">
+        <colgroup><col class="sf-c-path"><col class="sf-c-val"><col class="sf-c-val"><col class="sf-c-src"><col class="sf-c-act"></colgroup>
         <thead><tr><th>Path</th><th>Expected</th><th>Actual</th><th>Source</th><th></th></tr></thead>
         <tbody>${findingRows(fs, true, groups)}</tbody>
       </table></div></div>`;

@@ -182,3 +182,10 @@ dialog.sf-dialog-wide { width: min(1180px, 96vw); }
 /* Component navigation in the Settings tab, stays in place while scrolling */
 @media (min-width: 768px) { .sf-cfg-nav { position: sticky; top: 1rem; } }
 .sf-cfg-nav .list-group-item.active .badge { background: var(--tblr-bg-surface) !important; }
+/* Findings page: one table per device card; fixed widths so the columns line up across cards */
+table.sf-findings { table-layout: fixed; min-width: 600px; }
+table.sf-findings .sf-c-path { width: 34%; }
+table.sf-findings .sf-c-val { width: 15%; }
+table.sf-findings .sf-c-src { width: 18%; }
+table.sf-findings .sf-c-act { width: 18%; }
+table.sf-findings td { overflow-wrap: anywhere; }

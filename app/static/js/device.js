@@ -33,7 +33,7 @@ async function showDevice(route) {
     cfgReset(route.id);
     devState = { id: route.id, tab: route.tab, body: null, missing: false, hold: 0 };
     setDevMsg("", "");
-    $("#pagePre").innerHTML = `Fleet / <a href="#devices">Devices</a>`;
+    $("#pagePre").innerHTML = `Roster / <a href="#devices">Devices</a>`;
     $("#pageTitle").textContent = "…";
     $("#pageSub").textContent = route.id;
     $("#devActions").innerHTML = "";
@@ -122,7 +122,7 @@ function deviceActions(d) {
 function renderDeviceHeader() {
   const b = devState.body, d = b.device;
   document.title = `${d.name || d.id} · RelayRoster`;
-  $("#pagePre").innerHTML = `Fleet / <a href="#devices">Devices</a>`;
+  $("#pagePre").innerHTML = `Roster / <a href="#devices">Devices</a>`;
   $("#pageTitle").innerHTML = nameField(d, b.planned_name);
   $("#pageSub").innerHTML = deviceSub(d);
   $("#devActions").innerHTML = deviceActions(d);
