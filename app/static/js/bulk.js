@@ -159,7 +159,7 @@ function renderApplyJob(job) {
     }).join("")}</tbody></table></div></div>`;
   const c = job.counts || {};
   const parts = [c.done && `${c.done} ${job.restart_only ? "restarted" : "written"}`, c.failed && `${c.failed} failed`, c.skipped && `${c.skipped} skipped`].filter(Boolean);
-  $("#applySummary").textContent = job.running ? `${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}` : (parts.join(", ") || "Finished.");
+  $("#applySummary").textContent = (job.running ? `${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}` : (parts.join(", ") || "Finished.")) + (job.running ? " · Closing this window does not stop the job." : "");
   show($("#applyStart"), false);
   show($("#applyStop"), job.running && !job.cancelled);
   $("#applyClose").textContent = "Close";
@@ -243,14 +243,14 @@ function bulkTargets() {
 }
 
 // Job across several devices one after the other: restart or device password, progress in the bulk dialog
-const restartMany = (ids) => deviceJob("api/restart", ids,
+const restartMany = (ids) => deviceJob("api/restart", ids, "Restart devices",
   `Restart ${plural(ids.length, "device")} one after another? Each device is offline for a few seconds; moving shutters are skipped.`);
-const passwordMany = (ids) => deviceJob("api/auth/rollout", ids,
+const passwordMany = (ids) => deviceJob("api/auth/rollout", ids, "Set password",
   `Set the device password from Settings on ${plural(ids.length, "device")}? Devices that already have a password are skipped. Anything else that talks to these devices then needs this password too.`);
 
-async function deviceJob(url, ids, question) {
+async function deviceJob(url, ids, action, question) {
   if (!ids.length) { $("#bkMsg").innerHTML = `<span class="text-red">No devices selected</span>`; return; }
-  if (!confirm(question)) return;
+  if (!await confirmDialog(question, action)) return;
   try {
     const { status, body } = await api(url, { method: "POST", json: { device_ids: ids }, keep: "all" });
     if (status >= 400) throw new Error((body.errors || [body.detail]).join(" · "));

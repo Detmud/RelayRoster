@@ -157,8 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (staleDel) { removeStaleRule(data.stale_rules[+staleDel.dataset.staleDel]).catch((e) => showError(e.message)); return; }
     const unassign = ev.target.closest("[data-unassign]");
     if (unassign) {
-      if (confirm(`Remove this device from profile ${unassign.dataset.unassign}? If its match rule fits, the device is added to the profile's exclude list.`))
-        assignDevice(unassign.dataset.unassign, false).catch((e) => showError(e.message));
+      confirmDialog(`Remove this device from profile ${unassign.dataset.unassign}? If its match rule fits, the device is added to the profile's exclude list.`, "Remove from profile")
+        .then((yes) => yes && assignDevice(unassign.dataset.unassign, false)).catch((e) => showError(e.message));
       return;
     }
     const applyProf = ev.target.closest("[data-apply-prof]");
@@ -174,13 +174,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (row) goDevice(row.dataset.id, row.dataset.section);
   });
   $$("#planDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#planDlg").close()));
-  $("#planDlg").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   $("#planApply").addEventListener("click", applyPlan);
   $$("#fwDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#fwDlg").close()));
-  $("#fwDlg").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   $("#fwStart").addEventListener("click", startFwUpdate);
   $$("#applyDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#applyDlg").close()));
-  $("#applyDlg").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   $("#applyStart").addEventListener("click", startApply);
   $("#applyStop").addEventListener("click", stopApply);
   $("#devBulk").addEventListener("click", () => {

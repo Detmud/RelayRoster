@@ -121,6 +121,32 @@ function showError(msg) {
   show(bar, !!msg);
 }
 
+// ---- Dialogs ---------------------------------------------------------------------------------
+// Convention for every dialog: no X in the header; exactly one close button in the footer, called Cancel before
+// the start and Close after it, directly left of the primary button. Esc does the same as that button; a click
+// on the backdrop does nothing. Confirmations use confirmDialog with a named primary button, never confirm().
+// Resolves true when the user confirms. danger: the action deletes something.
+function confirmDialog(text, action, danger = false) {
+  let dlg = $("#confirmDlg");
+  if (!dlg) {
+    document.body.insertAdjacentHTML("beforeend", `<dialog id="confirmDlg" class="rr-dialog rr-dialog-confirm"><div class="card">
+      <div class="card-body" id="confirmText"></div>
+      <div class="card-footer d-flex gap-2 justify-content-end flex-wrap">
+        <button class="btn" type="button" value="">Cancel</button><button class="btn" type="button" value="yes" id="confirmOk"></button>
+      </div></div></dialog>`);
+    dlg = $("#confirmDlg");
+    $$("button", dlg).forEach((b) => b.addEventListener("click", () => dlg.close(b.value)));
+  }
+  $("#confirmText").textContent = text;
+  const ok = $("#confirmOk");
+  ok.textContent = action;
+  ok.className = `btn ${danger ? "btn-danger" : "btn-primary"}`;
+  dlg.returnValue = "";
+  dlg.showModal();
+  ok.focus();
+  return new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue === "yes"), { once: true }));
+}
+
 // ---- Sortable tables -------------------------------------------------------------------------
 // Convention: every table is sortable by every column that has a heading. sortTables() runs after each
 // change of the page and turns the headings of all tables into sort buttons (same markup as the device list:

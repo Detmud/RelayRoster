@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Dialogs close in one way: Cancel or Close in the footer (or Esc); no X in the header and no closing by a click
+  next to the dialog. Confirmations are dialogs of the app with a named button instead of the browser's own
+
 - Dashboard: the tile "Firmware updates" is now "Updates" and opens the device list filtered by "Update available"
 
 - Every table can be sorted by a click on a column heading (ascending, descending, back to the default order);

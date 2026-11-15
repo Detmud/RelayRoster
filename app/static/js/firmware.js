@@ -100,7 +100,7 @@ function renderFwJob(job) {
   const c = job.counts || {};
   const parts = [c.done && `${c.done} updated`, c.up_to_date && `${c.up_to_date} already up to date`,
     c.failed && `${c.failed} failed`, c.skipped && `${c.skipped} skipped`].filter(Boolean);
-  $("#fwSummary").textContent = job.running ? `${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}` : (parts.join(", ") || "Finished.");
+  $("#fwSummary").textContent = (job.running ? `${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}` : (parts.join(", ") || "Finished.")) + (job.running ? " · Closing this window does not stop the job." : "");
   show($("#fwStart"), false);
   show($("#fwCancel"), job.running && !job.cancelled);
   $("#fwClose").textContent = "Close";
