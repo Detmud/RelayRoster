@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- "Audit log" is now called **Activity** (`#activity`; `#audit` still works). The CSV export is named
+  `relayroster-activity.csv`; the API path `/api/audit` is unchanged
+- The product name is written "RelayRoster" everywhere in the UI
+
 ## [1.0.2] - 2026-11-15
 
 - Device types show the function first: "Shelly 2PM" with "Gen4" or "Gen2 · Pro" below instead of "Shelly 2PM Gen4"

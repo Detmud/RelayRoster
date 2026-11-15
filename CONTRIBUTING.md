@@ -32,10 +32,13 @@ overview of the modules.
   the user turns it on. A pull request must not add a write path that bypasses this.
 - **Allow list for configuration.** RelayRoster may only change the fields listed in `app/writable.py`. Wi-Fi
   credentials, passwords, device profiles and calibration values are deliberately excluded; please do not add them.
-- **Every write is audited.** New write functions record what they changed in the audit log, like the existing ones.
+- **Every write is audited.** New write functions record what they changed in the audit log (page Activity), like the existing ones.
 - **Tests** go next to the code they test (`tests/test_*.py`) and run against the fake fleet. `bash tests/ci.sh`
   must stay green.
 - **Language**: code, comments, documentation and commit messages in English.
+- **Product name**: in any text a user reads (UI, docs, messages, page titles) write **RelayRoster**. Lowercase
+  `relayroster` only for technical identifiers: image name, file names (`relayroster-backup.zip`), cookies,
+  headers, localStorage keys, database file.
 - **Dependencies**: pinned in `requirements.txt`; Dependabot proposes updates.
 
 ## Pull requests
