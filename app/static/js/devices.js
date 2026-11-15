@@ -127,12 +127,7 @@ function syncViewControls() {
     el.value = view[k];
     el.classList.toggle("rr-active", !!view[k]);
   }
-  $$("#devTable .table-sort").forEach((b) => {
-    const on = b.dataset.sort === view.sort;
-    b.classList.toggle("asc", on && view.dir === "asc");
-    b.classList.toggle("desc", on && view.dir === "desc");
-    b.closest("th").setAttribute("aria-sort", on ? (view.dir === "asc" ? "ascending" : "descending") : "none");
-  });
+  $$("#devTable .table-sort").forEach((b) => sortMark(b.closest("th"), b.dataset.sort === view.sort ? view.dir : ""));
 }
 
 function fillTypeFilter() {

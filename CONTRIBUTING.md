@@ -36,6 +36,9 @@ overview of the modules.
 - **Tests** go next to the code they test (`tests/test_*.py`) and run against the fake fleet. `bash tests/ci.sh`
   must stay green.
 - **Language**: code, comments, documentation and commit messages in English.
+- **Tables**: every table is sortable by every column that has a heading; columns with only buttons have no
+  heading. `sortTables` in `app/static/app.js` does this for any `table.table` with a `<thead>`. Give a cell
+  `data-sort` when its text does not sort well (rank of a status) and put times in `timeHtml`/`timeLongHtml`.
 - **Product name**: in any text a user reads (UI, docs, messages, page titles) write **RelayRoster**. Lowercase
   `relayroster` only for technical identifiers: image name, file names (`relayroster-backup.zip`), cookies,
   headers, localStorage keys, database file.

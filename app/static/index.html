@@ -239,8 +239,8 @@
                   <div class="card-actions"><span class="badge bg-secondary-lt d-none" id="attnCount"></span></div>
                 </div>
                 <div class="table-responsive">
-                  <table class="table table-vcenter card-table table-hover" id="attnTable">
-                    <thead><tr><th>Device</th><th>Issue</th><th class="text-end d-none d-sm-table-cell">Status</th></tr></thead>
+                  <table class="table table-vcenter card-table table-hover" id="attnTable" data-rr-sort="off">
+                    <thead><tr><th><button class="table-sort" data-sort="address" type="button">Address</button></th><th><button class="table-sort" data-sort="name" type="button">Device</button></th><th><button class="table-sort" data-sort="issue" type="button">Issue</button></th><th class="text-end d-none d-sm-table-cell"><button class="table-sort" data-sort="status" type="button">Status</button></th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -256,7 +256,7 @@
                 <div class="card-header"><h3 class="card-title">Device types</h3></div>
                 <div class="table-responsive">
                   <table class="table table-vcenter card-table" id="typesTable">
-                    <thead><tr><th>Type</th><th class="text-end">Devices</th><th>Firmware</th></tr></thead>
+                    <thead><tr><th>Type</th><th class="text-end" data-type="num">Devices</th><th>Firmware</th></tr></thead>
                     <tbody></tbody>
                   </table>
                 </div>
@@ -319,7 +319,7 @@
               </div>
             </div>
             <div class="table-responsive">
-              <table class="table table-vcenter card-table table-hover" id="devTable">
+              <table class="table table-vcenter card-table table-hover" id="devTable" data-rr-sort="off">
                 <thead><tr>
                   <th><button class="table-sort" data-sort="name" type="button">Device</button></th>
                   <th><button class="table-sort" data-sort="type" type="button">Type</button></th>

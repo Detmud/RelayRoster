@@ -121,6 +121,124 @@ function showError(msg) {
   show(bar, !!msg);
 }
 
+// ---- Sortable tables -------------------------------------------------------------------------
+// Convention: every table is sortable by every column that has a heading. sortTables() runs after each
+// change of the page and turns the headings of all tables into sort buttons (same markup as the device list:
+// .table-sort, aria-sort). Click order: ascending, descending, back to the order the table was rendered in.
+// - Value of a cell: data-sort, else <time datetime>, else the value of an input, else its text without buttons
+// - Comparator: th[data-type] (text, num, ip, version, time), else numbers as numbers and text numeric aware
+// - Rows that are a single cell with colspan (details) stay below their row; tr.rr-devrow starts a group
+// - State: pages keep it in localStorage per table, dialogs in memory. data-rr-sort names the table,
+//   data-rr-sort="off" marks tables that sort their data themselves (device list, Needs attention)
+const natCmp = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" }).compare;
+const SORT_NUM = /^-?\d+(?:\.\d+)?(?:\s*[a-zA-Z%°]+)?$/;
+const SORT_CMP = {
+  text: natCmp,
+  num: (a, b) => parseFloat(a) - parseFloat(b),
+  ip: (a, b) => nullsLast(ipKey(a), ipKey(b)) || (ipKey(a) ?? 0) - (ipKey(b) ?? 0) || natCmp(a, b),
+  version: (a, b) => versionCmp(a, b),
+  time: (a, b) => Number(a) - Number(b),
+  auto: (a, b) => (SORT_NUM.test(a) && SORT_NUM.test(b) ? parseFloat(a) - parseFloat(b) : natCmp(a, b)),
+};
+const sortMem = new Map();
+const sortKey = (t) => t.dataset.rrSort || t.id || t.closest("[id]")?.id || "table";
+function sortGet(t) {
+  const key = sortKey(t);
+  if (sortMem.has(key)) return sortMem.get(key);
+  let st = null;
+  if (t.closest(".rr-tab")) try { st = JSON.parse(localStorage.getItem(`relayroster.sort.${key}`)); } catch { /* egal */ }
+  sortMem.set(key, st);
+  return st;
+}
+function sortSet(t, st) {
+  const key = sortKey(t);
+  sortMem.set(key, st);
+  if (t.closest(".rr-tab")) try { st ? localStorage.setItem(`relayroster.sort.${key}`, JSON.stringify(st)) : localStorage.removeItem(`relayroster.sort.${key}`); } catch { /* egal */ }
+}
+// Mark the active column of a table: arrows on the button, aria-sort on the th
+function sortMark(th, dir) {
+  const b = $(".table-sort", th);
+  if (!b) return;
+  b.classList.toggle("asc", dir === "asc");
+  b.classList.toggle("desc", dir === "desc");
+  th.setAttribute("aria-sort", dir === "asc" ? "ascending" : dir === "desc" ? "descending" : "none");
+}
+function sortVal(td) {
+  if (!td) return "";
+  if (td.dataset.sort != null) return td.dataset.sort;
+  const tm = $("time[datetime]", td);
+  if (tm) return String(Date.parse(tm.dateTime));
+  const inp = $("input:not([type=checkbox]), select", td);
+  if (inp) return inp.value.trim();
+  let el = td;
+  if ($("button, .btn", td)) { el = td.cloneNode(true); $$("button, .btn", el).forEach((x) => x.remove()); }
+  const s = el.textContent.trim();
+  return s === "–" ? "" : s;
+}
+function sortBody(body, st, type) {
+  const rows = [...body.rows];
+  if (!rows.length) return;
+  let next = Math.max(-1, ...rows.map((r) => r._rrIdx ?? -1)) + 1;
+  rows.forEach((r) => { if (r._rrIdx == null) r._rrIdx = next++; });
+  // Groups (tr.rr-devrow stays on top of its rows), inside them units of a row plus its detail rows
+  const groups = [];
+  for (const r of rows) {
+    const detail = r.cells.length === 1 && r.cells[0].colSpan > 1;
+    if (r.classList.contains("rr-devrow") || !groups.length) groups.push({ head: r.classList.contains("rr-devrow") ? r : null, units: [] });
+    const g = groups.at(-1);
+    if (r === g.head) continue;
+    if (detail && g.units.length) g.units.at(-1).push(r);
+    else g.units.push([r]);
+  }
+  const cmp = SORT_CMP[type] || SORT_CMP.auto;
+  const dir = st?.dir === "desc" ? -1 : 1;
+  const out = [];
+  for (const g of groups) {
+    if (g.head) out.push(g.head);
+    const units = g.units.map((u) => ({ u, v: st ? sortVal(u[0].cells[st.col]) : "" }));
+    // Empty values always last, equal values in the rendered order
+    units.sort((a, b) => (st ? (a.v === "") - (b.v === "") || (a.v === "" ? 0 : dir * cmp(a.v, b.v)) : 0) || a.u[0]._rrIdx - b.u[0]._rrIdx);
+    units.forEach(({ u }) => out.push(...u));
+  }
+  if (out.some((r, i) => r !== rows[i])) body.append(...out);
+}
+function sortTables() {
+  sortObserver.disconnect();
+  for (const t of $$("table.table")) {
+    if (t.dataset.rrSort === "off" || !t.tHead?.rows.length) continue;
+    const ths = [...t.tHead.rows[0].cells];
+    for (const th of ths) {
+      if (th.dataset.rrTh) continue;
+      th.dataset.rrTh = "1";
+      const label = th.textContent.trim();
+      if (!label || $("input, .table-sort", th)) continue;
+      // A heading with a link (device columns of the peer comparison) keeps the link and gets a button next to it
+      if ($("a", th)) th.insertAdjacentHTML("beforeend", ` <button class="table-sort rr-sort-only" type="button" aria-label="Sort by ${esc(label)}"></button>`);
+      else th.innerHTML = `<button class="table-sort" type="button">${th.innerHTML}</button>`;
+    }
+    let st = sortGet(t);
+    if (st && !$(".table-sort", ths[st.col] || t)) st = null;
+    ths.forEach((th, i) => sortMark(th, st && st.col === i ? st.dir : ""));
+    for (const body of t.tBodies) sortBody(body, st, st ? ths[st.col].dataset.type : "");
+  }
+  sortObserver.observe(document.body, { childList: true, subtree: true });
+}
+let sortQueued = false;
+const sortObserver = new MutationObserver(() => {
+  if (sortQueued) return;
+  sortQueued = true;
+  queueMicrotask(() => { sortQueued = false; sortTables(); });
+});
+document.addEventListener("DOMContentLoaded", sortTables);
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest?.(".table-sort");
+  const t = b?.closest("table");
+  if (!t || t.dataset.rrSort === "off") return;
+  const col = b.closest("th").cellIndex, st = sortGet(t);
+  sortSet(t, !st || st.col !== col ? { col, dir: "asc" } : st.dir === "asc" ? { col, dir: "desc" } : null);
+  sortTables();
+});
+
 // ---- Zustand ---------------------------------------------------------------------------------
 
 let data = { devices: [], findings: [], peers: [], firmware: [], policy_errors: [] };
@@ -313,6 +431,15 @@ function attention(d) {
 }
 
 const ATTN_MAX = 10;
+// Needs attention sorts its data (not the rendered rows), because only the first ATTN_MAX rows are shown.
+// Default: most severe issue first. Kept in memory only.
+const ATTN_SORT = {
+  address: (a, b) => SORT_CMP.ip(a.d.host, b.d.host),
+  name: (a, b) => byName(a.d, b.d),
+  issue: (a, b) => a.items[0].rank - b.items[0].rank || (b.d.findings || 0) - (a.d.findings || 0),
+  status: (a, b) => STATUS_RANK[statusKey(a.d)] - STATUS_RANK[statusKey(b.d)],
+};
+let attnSort = { key: "issue", dir: "asc" };
 
 function renderDashboard(devs, peerDiffs, updates, down) {
   const counts = { ok: 0, new: 0 };
@@ -326,11 +453,12 @@ function renderDashboard(devs, peerDiffs, updates, down) {
   setStat("#cDown", down, down ? "Error or stale" : "All reachable", "text-red");
 
   const rows = devs.map((d) => ({ d, items: attention(d) })).filter((r) => r.items.length)
-    .sort((a, b) => a.items[0].rank - b.items[0].rank || (b.d.findings || 0) - (a.d.findings || 0)
-      || (a.d.name || "").localeCompare(b.d.name || "", "en", { numeric: true }));
+    .sort((a, b) => (attnSort.dir === "desc" ? -1 : 1) * ATTN_SORT[attnSort.key](a, b) || ATTN_SORT.issue(a, b) || byName(a.d, b.d));
+  $$("#attnTable .table-sort").forEach((b) => sortMark(b.closest("th"), b.dataset.sort === attnSort.key ? attnSort.dir : ""));
   $("#attnTable tbody").innerHTML = rows.slice(0, ATTN_MAX).map(({ d, items }) => `
     <tr class="cursor-pointer" data-id="${esc(d.id)}">
-      <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub">${esc(typeName(d))} · ${esc(d.host)}</span></td>
+      <td class="text-nowrap"><a class="font-monospace small" href="http://${esc(d.host)}/" target="_blank" rel="noopener noreferrer" data-stop>${esc(d.host)}</a></td>
+      <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub">${esc(typeName(d))}</span></td>
       <td><div class="d-flex flex-wrap gap-1">${items.map((i) => i.html).join("")}</div></td>
       <td class="text-end d-none d-sm-table-cell">${statusBadge(d)}</td>
     </tr>`).join("");
@@ -356,10 +484,11 @@ function renderDashboard(devs, peerDiffs, updates, down) {
   $("#typesTable tbody").innerHTML = fleet.map(([t, e]) => {
     const vers = [...e.vers].sort(versionCmp);
     const ver = vers.length > 1 ? badge("warn", `${vers.length} versions`, vers.join(", ")) : `<span class="font-monospace small">${esc(vers[0] || "–")}</span>`;
+    // Firmware sorts by the number of installed versions, then by the newest one
     return `<tr>
       <td><a href="#devices?${esc(new URLSearchParams({ type: t }).toString())}">${esc(t)}</a></td>
       <td class="text-end">${e.n}</td>
-      <td>${ver}</td>
+      <td data-sort="${vers.length} ${esc(vers.at(-1) || "")}">${ver}</td>
     </tr>`;
   }).join("");
   show($("#typesTable"), fleet.length > 0);
