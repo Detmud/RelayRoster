@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Policy: `match` in profiles and address blocks accepts `kind` (what the hardware does: `2PM`, `i4`, `Plug`) and
+  `variant` (`Standard`, `Pro`, `Mini`), so one rule covers all generations and survives firmware updates that
+  rename device IDs. The default policy matches "Button input" by `kind: i4`. Findings shows a hint for rules that
+  still match by a glob on `app` or `id` where `kind` would do; existing policies are not changed
+- Device list: the type filter also offers function, generation and form factor
+
 - Peer comparison: "Use majority" writes the majority value to the differing devices through the usual preview,
   optionally with a rule in the policy; "Set…" opens Bulk change with the setting and the type filled in. Needs
   "Allow config changes"

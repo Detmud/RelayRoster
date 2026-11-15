@@ -10,12 +10,15 @@ from typing import Any
 
 import yaml
 
+from .models import device_type
 from .compare import MISSING, canon, component_exists, expand_pattern, flatten, matches_any, version_key
 from .shelly import clean_name
 
 DEFAULT_POLICY_PATH = os.path.join(os.path.dirname(__file__), "default_policy.yaml")
 
-_MATCH_KEYS = {"app", "model", "profile", "name", "id", "gen"}
+_MATCH_KEYS = {"app", "model", "profile", "name", "id", "gen", "kind", "variant"}
+# Match fields derived from the model table (app/models.py), compared without regard to case
+_TYPE_KEYS = ("kind", "variant")
 # Allowed keys per profile and override: typos like `setting:` should stand out instead of never taking effect
 _PROFILE_KEYS = {"name", "match", "settings", "ignore", "devices", "exclude"}
 _OVERRIDE_KEYS = {"settings", "ignore"}
@@ -453,14 +456,46 @@ def load(path: str) -> dict[str, Any]:
 # ---- Auswerten ------------------------------------------------------------------------------
 
 def profile_matches(match: dict[str, Any], device: dict[str, Any]) -> bool:
+    """All fields of `match` apply (globs, list = or). `kind` (what the hardware does: 2PM, i4, Plug) and
+    `variant` (Standard, Pro, Mini) come from the model table, so a rule holds across generations and
+    survives firmware updates that rename device IDs."""
+    dtype = None
     for key, want in match.items():
+        wants = want if isinstance(want, list) else [want]
+        if key in _TYPE_KEYS:
+            if dtype is None:
+                dtype = device_type(device.get("model"), device.get("app"), device.get("gen"))
+            have = str(device.get(key) or dtype[key]).lower()
+            if not any(fnmatchcase(have, str(w).lower()) for w in wants):
+                return False
+            continue
         have = device.get(key)
         if have is None:
             have = ""
-        wants = want if isinstance(want, list) else [want]
         if not any(fnmatchcase(str(have), str(w)) for w in wants):
             return False
     return True
+
+
+def kind_hints(policy: dict[str, Any], devices: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Profiles and address blocks that still match by a glob on `app` or `id` although every device they
+    match has the same kind. Hint only, nothing is changed: `kind` reads better and survives ID renames."""
+    out: list[dict[str, Any]] = []
+    entries = [("Profile", p) for p in policy.get("profiles") or []]
+    entries += [("Address block", b) for b in (policy.get("network") or {}).get("blocks") or []]
+    for what, entry in entries:
+        match = entry.get("match") or {}
+        globs = {k: match[k] for k in ("app", "id") if k in match}
+        if not globs or "kind" in match:
+            continue
+        hit = [d for d in devices if profile_matches(match, d)]
+        kinds = {device_type(d.get("model"), d.get("app"), d.get("gen"))["kind"] for d in hit}
+        if len(kinds) != 1 or "unknown" in kinds:
+            continue
+        kind = kinds.pop()
+        out.append({"what": what, "name": str(entry.get("name") or entry.get("range") or ""), "match": globs,
+                    "kind": kind, "devices": len(hit)})
+    return out
 
 
 def profile_applies(prof: dict[str, Any], device: dict[str, Any]) -> bool:

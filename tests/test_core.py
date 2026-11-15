@@ -999,6 +999,25 @@ def test_device_settings_view():
     assert dp.outlier_map(pv) == {"p": {"majority": 2, "has_majority": True}}
 
 
+def test_match_kind_and_variant():
+    """match on kind/variant comes from the model table: one rule for all generations, no glob on names."""
+    i4 = {"id": "shellyplusi4-b8d61a000101", "app": "PlusI4", "model": "SNSN-0024X", "gen": 2}
+    mini = {"id": "shelly1minig3-84fce6000401", "app": "Mini1G3", "model": "S3SW-001X8EU", "gen": 3}
+    pro = {"id": "shellypro2pm-0cb815000001", "app": "Pro2PM", "model": "SPSW-202PE16EU", "gen": 2}
+    assert pol.profile_matches({"kind": "i4"}, i4) and pol.profile_matches({"kind": "I4"}, i4), "case does not matter"
+    assert not pol.profile_matches({"kind": "i4"}, mini)
+    assert pol.profile_matches({"kind": "1", "variant": "Mini"}, mini) and not pol.profile_matches({"kind": "1*"}, pro)
+    assert pol.profile_matches({"kind": ["2PM", "i4"], "variant": "pro"}, pro), "list = or"
+    assert pol.profile_matches({"kind": "unknown"}, {"id": "x", "app": "Brandnew", "model": "XX-1"})
+    assert pol.validate({"profiles": [{"name": "A", "match": {"kind": "i4", "variant": "Standard"}, "settings": {}}]}) == []
+    policy = {"profiles": [{"name": "Buttons", "match": {"app": "*I4*"}}, {"name": "ByKind", "match": {"kind": "i4"}},
+                           {"name": "Mixed", "match": {"id": "shelly*"}}],
+              "network": {"blocks": [{"name": "Mini", "match": {"id": "shelly1minig3-*"}, "range": "10.0.0.1-9"}]}}
+    hints = pol.kind_hints(policy, [i4, mini, pro])
+    assert [(h["what"], h["name"], h["kind"], h["devices"]) for h in hints] == [
+        ("Profile", "Buttons", "i4", 1), ("Address block", "Mini", "1", 1)], "only globs whose devices share one kind"
+
+
 def test_models():
     # Function first, then generation, form factor (Pro, Mini; Standard hidden) and suffix
     assert models.model_name("S4SW-002P16EU", "S2PMG4") == "Shelly 2PM · Gen4"

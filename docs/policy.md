@@ -11,7 +11,7 @@ baseline:                                   # applies to all devices
 
 profiles:                                   # per device function
   - name: Shutter
-    match: {profile: cover}                 # fields: app, model, profile, name, id, gen (globs, list = or)
+    match: {profile: cover}                 # fields: kind, variant, app, model, profile, name, id, gen (globs, list = or)
     settings:
       cover:*.obstruction_detection.enable: true
     ignore: [wifi.ap.enable]                # exempt a baseline rule for these devices
@@ -29,7 +29,7 @@ but the setting does not, the finding is "missing" (usually older firmware).
 | Layer | Use it for | Example |
 |---|---|---|
 | `baseline` | every device | time zone, access point off |
-| `profiles` | per **function**, not per room; `match` on `app`/`profile` | "Shutter", "Button input" |
+| `profiles` | per **function**, not per room; `match` on `kind`/`profile` | "Shutter", "Button input" |
 | `overrides` | only device-specific, measured values, **with a comment saying why and when** | `cover:0.power_limit` per motor |
 | `peer_ignore` | values that must differ per device | names, MQTT client ID |
 
@@ -49,8 +49,8 @@ network:
   subnet: 192.168.50.0/24         # where all devices should be
   dhcp_pool: 192.168.1.0/24       # where your router puts new devices
   blocks:                         # address block per type, the first match wins
-    - {name: Plus 1, match: {id: "shellyplus1-*"}, range: 192.168.50.10-19}
-    - {name: Plus i4, match: {id: "shellyplusi4-*"}, range: 192.168.50.30-39}
+    - {name: Shelly 1, match: {kind: "1"}, range: 192.168.50.10-19}
+    - {name: Shelly i4, match: {kind: i4}, range: 192.168.50.30-39}
 ```
 
 Findings (filter "Address") and a badge next to the IP report devices in the DHCP pool, outside the subnet, in the

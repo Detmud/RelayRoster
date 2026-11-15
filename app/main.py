@@ -344,6 +344,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             "policy_errors": policy_errors,
             "names_unknown": rep["names_unknown"],
             "stale_rules": rep["stale_rules"],
+            "kind_hints": pol.kind_hints(policy_data, store.devices()) if policy_data else [],
         }
 
     @app.get("/api/devices/{device_id}", dependencies=[Depends(auth)])

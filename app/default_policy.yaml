@@ -69,7 +69,7 @@ profiles:
   # For rocker switches that latch, use type: switch in an override for that input.
   - name: Button input
     match:
-      app: "*I4*"                                       # Plus i4, i4 Gen3, i4 DC
+      kind: i4                                          # every i4: Plus i4, i4 Gen3, i4 DC
     settings:
       input:*.enable: true
       input:*.type: button
@@ -100,8 +100,8 @@ overrides: {}
 #   subnet: 192.168.50.0/24
 #   dhcp_pool: 192.168.1.0/24
 #   blocks:
-#     - {name: Plus 1, match: {id: "shellyplus1-*"}, range: 192.168.50.10-19}
-#     - {name: Plus i4, match: {id: "shellyplusi4-*"}, range: 192.168.50.30-39}
+#     - {name: Shelly 1, match: {kind: "1"}, range: 192.168.50.10-19}
+#     - {name: Shelly i4, match: {kind: i4}, range: 192.168.50.30-39}
 
 # Peer comparison: paths that may differ per device
 peer_ignore:
