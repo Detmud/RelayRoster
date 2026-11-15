@@ -1,13 +1,13 @@
 # RelayRoster: local fleet management for Shelly Gen2+ devices (read-only, write functions only with a switch in Settings)
 
 # Stage 1: fetch Tabler CSS from the official npm package, version and SHA-256 are pinned in tools/fetch_vendor.py
-FROM python:3.12-slim AS vendor
+FROM python:3.15-slim AS vendor
 WORKDIR /build
 COPY tools/fetch_vendor.py .
 RUN python fetch_vendor.py /build/vendor
 
 # Stage 2: runtime
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="RelayRoster" \
