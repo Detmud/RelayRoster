@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-15
+
 - Device types show the function first: "Shelly 2PM" with "Gen4" or "Gen2 · Pro" below instead of "Shelly 2PM Gen4"
   or "Shelly Pro 2PM". "Plus" is shown as Gen2; Pro and Mini as form factor; DC and the plug types as suffix.
   Group headings (firmware, peer comparison, bulk change) read "Shelly 2PM · Gen4". The order number is in the
