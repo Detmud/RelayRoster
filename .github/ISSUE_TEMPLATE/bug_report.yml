@@ -1,0 +1,45 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please remove passwords, MAC addresses and anything else you do not want public.
+        Security problems go through the *Security* tab, not through an issue (see SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: RelayRoster version
+      description: Shown on the Settings page, or the image tag you run
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device model and firmware
+      description: As shown in the inventory, e.g. "Shelly Plus i4, 1.7.6". Leave empty if no device is involved.
+      placeholder: Shelly Plus i4, 1.7.6
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `docker compose logs relayroster` around the time of the problem
+      render: text
+  - type: dropdown
+    id: write
+    attributes:
+      label: Were write functions involved?
+      options:
+        - "No, read-only"
+        - "Yes (configuration, firmware, restart, rename or password)"
+    validations:
+      required: true

@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest something RelayRoster should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or task, not yet the solution
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should RelayRoster do?
+    validations:
+      required: true
+  - type: dropdown
+    id: write
+    attributes:
+      label: Does it write to devices?
+      description: Write functions need their own switch in Settings and an audit entry, see CONTRIBUTING.md
+      options:
+        - "No, it only reads or shows data"
+        - "Yes, it changes something on a device"
+    validations:
+      required: true

@@ -1,0 +1,34 @@
+name: New device type
+description: A Shelly Gen2+ device that RelayRoster does not handle well yet
+labels: [device]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        RelayRoster reads any Gen2+ device, but the policy schema and the peer comparison know specific components.
+        The two RPC outputs below are the best start. Please remove Wi-Fi passwords, MAC addresses and anything
+        else you do not want public.
+  - type: input
+    id: model
+    attributes:
+      label: Model and firmware
+      placeholder: Shelly Pro 3EM, 1.7.6
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Output of http://<device>/rpc/Shelly.GetConfig
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of http://<device>/rpc/Shelly.GetStatus
+      render: json
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What does RelayRoster get wrong with it?
+      description: Missing settings, wrong drift findings, errors in the log

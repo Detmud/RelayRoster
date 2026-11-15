@@ -57,7 +57,11 @@ Open `http://<host>:8746`.
 
 ## Contributing
 
-Issues and pull requests are welcome. The tests run without real devices: `bash tests/ci.sh`.
+Issues and pull requests are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). The tests run without real devices:
+`bash tests/ci.sh`. Security problems go to [SECURITY.md](SECURITY.md), not to a public issue.
+
+RelayRoster is a hobby project. Write functions change real devices; use them at your own risk, as the
+[licence](LICENSE) says.
 
 ## License
 
