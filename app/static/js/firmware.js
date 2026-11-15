@@ -133,8 +133,8 @@ function renderBackups() {
     <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
     <td>${typeLabel(d)}${typeSub(d)}</td>
     <td class="text-end">${d.snapshot_count}</td>
-    <td>${esc(fmtTime(d.last_change))}</td>
-    <td class="text-secondary">${esc(ago(d.last_confirmed))}</td>
+    <td>${timeLongHtml(d.last_change)}</td>
+    <td class="text-secondary">${agoHtml(d.last_confirmed)}</td>
     <td>${d.last_snapshot ? `<a class="btn btn-sm" href="api/snapshots/${d.last_snapshot}/download" data-stop>${ICON.download}JSON</a>` : ""}</td>
   </tr>`).join("");
 }

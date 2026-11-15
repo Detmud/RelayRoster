@@ -178,7 +178,7 @@ function devOverview(b) {
   const status = infoCard("Status", [
     dgItem("Status", statusBadge(d)),
     dgItem("Uptime", esc(fmtUptime(d.status?.sys?.uptime))),
-    dgItem("Last read", esc(fmtTime(d.last_ok))),
+    dgItem("Last read", timeHtml(d.last_ok)),
     dgItem("Password", d.auth_en ? badge("ok", "set") : badge("bad", "none")),
     d.last_error ? dgItem("Error", `<span class="text-red">${esc(d.last_error)}</span>`) : "",
   ]);
@@ -499,9 +499,9 @@ function ruleFromRaw(raw) {
 function devBackups(b) {
   if (!b.snapshots.length) return `<div class="card"><div class="empty"><p class="empty-title">No snapshot yet</p></div></div>`;
   return `<div class="card">${cardTable(["Version", "Firmware", "Confirmed until", ""], b.snapshots.map((s, i) => `<tr>
-      <td>${esc(fmtTime(s.taken_at))}${i === 0 ? ` ${badge("ok", "current")}` : ""}</td>
+      <td>${timeLongHtml(s.taken_at)}${i === 0 ? ` ${badge("ok", "current")}` : ""}</td>
       <td class="font-monospace small">${esc(s.ver || "–")}</td>
-      <td class="text-secondary">${esc(fmtTime(s.confirmed_at))}</td>
+      <td class="text-secondary">${timeLongHtml(s.confirmed_at)}</td>
       <td class="text-end text-nowrap">${i < b.snapshots.length - 1 ? `<button class="btn btn-sm" data-diff="${s.id}" type="button">Changes</button> ` : ""}${i > 0 && allowConfig ? `<button class="btn btn-sm" data-restore="${s.id}" data-when="${esc(fmtTime(s.taken_at))}" type="button" title="Write the configuration of this backup back to the device (preview first)">Restore…</button> ` : ""}<a class="btn btn-sm" href="api/snapshots/${s.id}/download">${ICON.download}JSON</a></td>
     </tr><tr class="d-none" id="diff-${s.id}"><td colspan="4"></td></tr>`).join(""))}</div>`;
 }
@@ -516,7 +516,7 @@ function devChanges(b) {
     const [path, ...rest] = a.action === "config" ? (a.detail || "").split(" · ") : [null];
     const detail = a.action === "config" ? rest.join(" · ") : a.detail;
     const val = (v) => { if (a.action !== "config") return esc(v || ""); try { return esc(fmtVal(JSON.parse(v))); } catch { return esc(v || ""); } };
-    return `<tr><td class="text-nowrap">${esc(fmtTime(a.at))}</td>
+    return `<tr><td class="text-nowrap">${timeLongHtml(a.at)}</td>
       <td>${esc(what[a.action] || a.action)}${path ? `<span class="rr-sub">${esc(path)}</span>` : ""}</td>
       <td>${a.action === "reboot" || a.action === "auth" ? `<span class="text-secondary">–</span>`
         : `${a.old ? val(a.old) : esc(a.action === "rename" ? "(no name)" : "–")}<span class="rr-arrow">→</span>${val(a.new)}`}</td>
