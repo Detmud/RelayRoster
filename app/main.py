@@ -896,7 +896,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             w.writerow([e["at"], e["device_id"], e["device_name"] or "", e["action"], e["old"] or "", e["new"] or "",
                         "ok" if e["ok"] else "failed", e["detail"] or ""])
         return Response(buf.getvalue(), media_type="text/csv; charset=utf-8",
-                        headers={"Content-Disposition": 'attachment; filename="relayroster-audit.csv"'})
+                        headers={"Content-Disposition": 'attachment; filename="relayroster-activity.csv"'})
 
     return app
 

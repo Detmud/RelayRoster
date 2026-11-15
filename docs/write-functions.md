@@ -13,7 +13,7 @@ reaches the network. Each write function has its own switch in **Settings**, all
 | Allow setting device passwords | `Shelly.SetAuth`, only to set a password on devices that have none |
 
 The test suite checks every request sent to the simulated devices against these rules. Every write action is
-recorded in the audit log.
+recorded in the audit log (page Activity).
 
 **Use at your own risk.** Firmware updates restart devices, and a wrong setting can switch a load or stop a shutter.
 Test write functions on a device that is not doing anything important first.
@@ -22,7 +22,7 @@ Test write functions on a device that is not doing anything important first.
 
 All of them follow the same pattern: preview first, then a background job that handles one device after the other,
 checks the device identity (`Shelly.GetDeviceInfo`) before writing, aborts if the device changed since it was last
-read, reads the device back, stores a snapshot and writes the audit log.
+read, reads the device back, stores a snapshot and writes the audit log (page Activity).
 
 - **Edit configuration** (device page, Settings tab, "Edit"): changes collect as a draft, "Review & write" shows the
   exact calls (e.g. `Cover.SetConfig {"id": 0, "config": {"power_limit": 280}}`), then they are written. "Use …"

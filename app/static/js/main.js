@@ -13,7 +13,7 @@ const PAGES = {
   firmware: { pre: "Roster", title: "Firmware", sub: "Installed version per device, grouped by type. \"Stable available\" is reported by the device itself." },
   backups: { pre: "Roster", title: "Backups", sub: "RelayRoster stores a snapshot on every change: configuration, scripts with code, schedules, webhooks and KVS. A firmware update alone does not count as a change." },
   profiles: { pre: "Configuration", title: "Profiles", sync: false, sub: "Target values per function, e.g. all roller shutters, stored in <code>/data/policy.yaml</code> with comments kept. Nothing here is written to a device." },
-  audit: { pre: "Roster", title: "Audit log", sync: false, sub: "Every write action of relayroster: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
+  activity: { pre: "Roster", title: "Activity", sync: false, sub: "Everything RelayRoster wrote: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
   bulk: { pre: "Roster", title: "Bulk change", sub: "Set one setting on many devices at once, e.g. the NTP server for all devices. Preview first; devices without the setting are left alone." },
   policy: { pre: "Configuration", title: "Policy", sync: false, sub: "The target state for all devices, stored in <code>/data/policy.yaml</code>. Changes here only affect the comparison, never a device." },
   settings: { pre: "Configuration", title: "Settings", sync: false, sub: "Stored in <code>/data</code> and applied immediately, no restart. Environment variables only provide the defaults." },
@@ -43,7 +43,7 @@ function showPage(name, push = false) {
     showProfiles().catch((e) => showError(e.message));
   } else {
     if (name === "bulk") showBulk().catch((e) => showError(e.message));
-    if (name === "audit") showAudit().catch((e) => showError(e.message));
+    if (name === "activity") showAudit().catch((e) => showError(e.message));
     $("#pagePre").textContent = p.pre;
     $("#pageTitle").textContent = p.title;
     $("#pageSub").innerHTML = p.sub;
@@ -59,7 +59,8 @@ function showPage(name, push = false) {
 }
 
 const pageFromHash = () => {
-  const name = location.hash.slice(1).split("?")[0].split("/")[0];
+  let name = location.hash.slice(1).split("?")[0].split("/")[0];
+  if (name === "audit") name = "activity";   // old name of the page, links keep working
   if (name === "device") return devRoute() ? "device" : null;
   return Object.hasOwn(PAGES, name) ? name : null;
 };
