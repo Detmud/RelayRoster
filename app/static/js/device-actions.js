@@ -11,7 +11,7 @@ function nameField(d, planned) {
   const current = d.name || "";
   const plan = planned && planned !== current
     ? `<div class="small text-secondary mt-1 fw-normal" id="namePlan">Plan: ${esc(planned)}</div>` : "";
-  return `<div class="sf-name sf-name-title">${current ? esc(current) : `<span class="text-secondary">(no name)</span>`}${plan}</div>`;
+  return `<div class="rr-name rr-name-title">${current ? esc(current) : `<span class="text-secondary">(no name)</span>`}${plan}</div>`;
 }
 
 function setNameMsg(kind, text) {
@@ -27,7 +27,7 @@ function startNameEdit(value) {
   if (!input || !allowRename) return;
   nameEdit = { id: input.dataset.device, current: input.dataset.current };
   input.readOnly = false;
-  input.closest(".sf-name").classList.add("sf-editing");
+  input.closest(".rr-name").classList.add("rr-editing");
   if (value !== undefined) input.value = value;
   setNameMsg("hint", "");
   show($("#nameActions"), true);
@@ -44,7 +44,7 @@ function endNameEdit(reset = true) {
   const input = $("#nameInput");
   if (input) {
     input.readOnly = true;
-    input.closest(".sf-name").classList.remove("sf-editing");
+    input.closest(".rr-name").classList.remove("rr-editing");
     if (reset && nameEdit) input.value = nameEdit.current;
     input.classList.remove("is-invalid");
   }
@@ -100,7 +100,7 @@ function wireNameEdit(d) {
   input.dataset.current = d.name || "";
   if (!allowRename) return;
   $("#nameEdit").addEventListener("click", () => (nameEdit ? input.focus() : startNameEdit()));
-  $("#nameUsePlan")?.addEventListener("click", () => startNameEdit(input.closest(".sf-name").dataset.planned));
+  $("#nameUsePlan")?.addEventListener("click", () => startNameEdit(input.closest(".rr-name").dataset.planned));
   $("#nameSave").addEventListener("click", saveName);
   $("#nameCancel").addEventListener("click", () => endNameEdit());
   input.addEventListener("keydown", (ev) => {
@@ -115,7 +115,7 @@ function wireNameEdit(d) {
 // As with renaming: if the function is off, the button stays visible, disabled, and leads to Settings
 const rebootButton = (cls = "") => allowReboot
   ? `<button class="btn ${cls}" type="button" data-act="reboot" title="Restart the device (Shelly.Reboot) and wait until it is back">${ICON.power}Restart device</button>`
-  : `<a class="btn sf-off ${cls}" href="#settings" aria-disabled="true"
+  : `<a class="btn rr-off ${cls}" href="#settings" aria-disabled="true"
        title="Restarting is off. Turn it on in Settings">${ICON.power}Restart device</a>`;
 
 async function rebootDevice() {

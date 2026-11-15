@@ -2,21 +2,21 @@
 // Part of the UI, loads after app.js; shared global scope, order defined in index.html
 // ---- Verdrahtung -----------------------------------------------------------------------------
 
-// Pages: sidebar entry, page header and content. The hash names are the same as for the old tabs,
+// Pages: sidebar entry, page header and content. sync: false hides "Sync now" on pages without device data. The hash names are the same as for the old tabs,
 // so existing links (#drift, #devices?sort=…) keep working.
 const PAGES = {
-  dashboard: { pre: "Overview", title: "Dashboard", sub: "State of the fleet at a glance. Every tile opens the matching view." },
-  devices: { pre: "Fleet", title: "Devices", sub: "All Shellies found on the network. A click on a row opens the device page; Ctrl/Cmd-click on the name opens it in a new tab." },
-  device: { pre: "Fleet / Devices", title: "Device", sub: "" },   // content comes from renderDeviceHeader
-  drift: { pre: "Fleet", title: "Findings", sub: "Deviations from the policy. The source shows which rule applies: baseline, a type profile, a device override or the address plan." },
-  peers: { pre: "Fleet", title: "Peer comparison", sub: "Device types whose devices differ from each other, without any policy. Highlighted values differ from the majority. Settings without effect (e.g. <code>cloud.server</code> with cloud off) do not count, see <code>peer_depends</code>. Device-specific paths are listed under <code>peer_ignore</code>; paths in <code>ignore</code> of a profile or override do not count for its devices." },
-  firmware: { pre: "Fleet", title: "Firmware", sub: "Installed version per device, grouped by type. \"Stable available\" is reported by the device itself." },
-  backups: { pre: "Fleet", title: "Backups", sub: "RelayRoster stores a snapshot on every change: configuration, scripts with code, schedules, webhooks and KVS. A firmware update alone does not count as a change." },
-  profiles: { pre: "Configuration", title: "Profiles", sub: "Target values per function, e.g. all roller shutters, stored in <code>/data/policy.yaml</code> with comments kept. Nothing here is written to a device." },
-  audit: { pre: "Fleet", title: "Audit log", sub: "Every write action of relayroster: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
-  bulk: { pre: "Configuration", title: "Bulk change", sub: "Set one setting on many devices at once, e.g. the NTP server for the whole fleet. Preview first; devices without the setting are left alone." },
-  policy: { pre: "Configuration", title: "Policy", sub: "The target state for all devices, stored in <code>/data/policy.yaml</code>. Changes here only affect the comparison, never a device." },
-  settings: { pre: "Configuration", title: "Settings", sub: "Stored in <code>/data</code> and applied immediately, no restart. Environment variables only provide the defaults." },
+  dashboard: { pre: "Overview", title: "Dashboard", sub: "State of all devices at a glance. Every tile opens the matching view." },
+  devices: { pre: "Roster", title: "Devices", sub: "All Shellies found on the network. A click on a row opens the device page; Ctrl/Cmd-click on the name opens it in a new tab." },
+  device: { pre: "Roster / Devices", title: "Device", sub: "" },   // content comes from renderDeviceHeader
+  drift: { pre: "Roster", title: "Findings", sub: "Deviations from the policy. The source shows which rule applies: baseline, a type profile, a device override or the address plan." },
+  peers: { pre: "Roster", title: "Peer comparison", sub: "Device types whose devices differ from each other, without any policy. Highlighted values differ from the majority. Settings without effect (e.g. <code>cloud.server</code> with cloud off) do not count, see <code>peer_depends</code>. Device-specific paths are listed under <code>peer_ignore</code>; paths in <code>ignore</code> of a profile or override do not count for its devices." },
+  firmware: { pre: "Roster", title: "Firmware", sub: "Installed version per device, grouped by type. \"Stable available\" is reported by the device itself." },
+  backups: { pre: "Roster", title: "Backups", sub: "RelayRoster stores a snapshot on every change: configuration, scripts with code, schedules, webhooks and KVS. A firmware update alone does not count as a change." },
+  profiles: { pre: "Configuration", title: "Profiles", sync: false, sub: "Target values per function, e.g. all roller shutters, stored in <code>/data/policy.yaml</code> with comments kept. Nothing here is written to a device." },
+  audit: { pre: "Roster", title: "Audit log", sync: false, sub: "Every write action of relayroster: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
+  bulk: { pre: "Roster", title: "Bulk change", sub: "Set one setting on many devices at once, e.g. the NTP server for all devices. Preview first; devices without the setting are left alone." },
+  policy: { pre: "Configuration", title: "Policy", sync: false, sub: "The target state for all devices, stored in <code>/data/policy.yaml</code>. Changes here only affect the comparison, never a device." },
+  settings: { pre: "Configuration", title: "Settings", sync: false, sub: "Stored in <code>/data</code> and applied immediately, no restart. Environment variables only provide the defaults." },
 };
 let currentPage = null;
 
@@ -33,9 +33,10 @@ function showPage(name, push = false) {
     if (on) $(".nav-link", li).setAttribute("aria-current", "page");
     else $(".nav-link", li).removeAttribute("aria-current");
   });
-  $$(".sf-tab").forEach((el) => show(el, el.id === `tab-${name}`));
+  $$(".rr-tab").forEach((el) => show(el, el.id === `tab-${name}`));
   $("#syncBtn").title = name === "device" ? "Read this device now" : "Read all known devices now";
   $$("[data-actions]").forEach((el) => show(el, el.dataset.actions === name));
+  $$("#syncGroup, .rr-syncinfo").forEach((el) => show(el, p.sync !== false));
   if (name === "device") {
     showDevice(devRoute()).catch((e) => showError(e.message));
   } else if (name === "profiles") {
@@ -100,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && $("#syncMenu").classList.contains("show")) { setSyncMenu(false); $("#syncMenuBtn").focus(); }
     if (ev.key === "Escape" && $("#sidebarMenu").classList.contains("show")) { setNav(false); $("#navToggle").focus(); }
-    if (ev.key === "Escape") $$(".sf-menu.show").forEach((m) => { setMenu(m, false); m.previousElementSibling?.focus(); });
+    if (ev.key === "Escape") $$(".rr-menu.show").forEach((m) => { setMenu(m, false); m.previousElementSibling?.focus(); });
   });
   $("#cancelBtn").addEventListener("click", cancelScan);
   $("#devFilter").addEventListener("input", (ev) => setView({ q: ev.target.value }));
@@ -123,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!ev.target.closest("#syncGroup")) setSyncMenu(false);
     // Menus with data-menu-toggle (device page): open and close, a click elsewhere closes
     const toggle = ev.target.closest("[data-menu-toggle]");
-    $$(".sf-menu.show").forEach((m) => { if (!toggle || m !== toggle.nextElementSibling) setMenu(m, false); });
+    $$(".rr-menu.show").forEach((m) => { if (!toggle || m !== toggle.nextElementSibling) setMenu(m, false); });
     if (toggle) { setMenu(toggle.nextElementSibling, !toggle.nextElementSibling.classList.contains("show")); return; }
     const act = ev.target.closest("[data-act]");
     if (act) {

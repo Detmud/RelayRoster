@@ -661,11 +661,11 @@ def test_admin_layout_assets():
         _, _, c = setup(tmp)
         html = c.get("/").text
         assert 'id="sidebar"' in html and 'id="navToggle"' in html
-        assert 'sf-tabs' not in html and 'data-tab=' not in html, "alte Reiterleiste entfernt"
+        assert 'rr-tabs' not in html and 'data-tab=' not in html, "alte Reiterleiste entfernt"
         for page in ("dashboard", "devices", "drift", "peers", "firmware", "backups", "policy", "settings"):
             assert f'href="#{page}" data-page="{page}"' in html, page
             assert f'id="tab-{page}"' in html, page
-        for el in ("cDevices", "cFindings", "cPeers", "cUpdates", "cDown", "attnTable", "fleetTable", "pageTitle"):
+        for el in ("cDevices", "cFindings", "cPeers", "cUpdates", "cDown", "attnTable", "typesTable", "pageTitle"):
             assert f'id="{el}"' in html, el
         assert '#devices?sort=status&amp;status=down' in html and '<option value="down">' in html
         # relative: no path starts with / (sub-path behind a proxy)
@@ -699,7 +699,7 @@ def test_peer_comparison_only_effective_differences():
         assert r.status_code == 422 and "only a value" in r.json()["errors"][0]
         js = all_js(c)
         assert "Single devices" not in js and "All device types are uniform" in js and "difference${hs.length" in js
-        assert "sf-fw-table" in js, "firmware tables with fixed column widths"
+        assert "rr-fw-table" in js, "firmware tables with fixed column widths"
 
 
 def test_sidebar_layout_setting():

@@ -232,7 +232,7 @@ function ruleRow(r, i) {
     <td><input class="form-control form-control-sm font-monospace" data-f="text" value="${esc(r.text)}" placeholder="${r.op === "in" ? "a, b" : "value"}" aria-label="Value"></td>
     <td><input class="form-control form-control-sm" data-f="comment" value="${esc(r.comment)}" placeholder="why" aria-label="Comment"></td>
     <td class="text-end"><button class="btn btn-sm btn-ghost-danger btn-icon" type="button" data-rule-del="${i}" aria-label="Remove rule">✕</button></td>
-  </tr><tr class="sf-muted-row" data-rule-res="${i}"><td colspan="5" class="small pt-0" id="pfRes-${i}"></td></tr>`;
+  </tr><tr class="rr-muted-row" data-rule-res="${i}"><td colspan="5" class="small pt-0" id="pfRes-${i}"></td></tr>`;
 }
 
 function renderProfileEditor() {
@@ -270,7 +270,7 @@ function renderProfileEditor() {
       <div class="col-12">
         <div class="card"><div class="card-header"><h3 class="card-title">Settings</h3>
           <div class="card-actions"><button class="btn btn-sm" type="button" id="pfAdd">Add rule</button></div></div>
-          <div class="table-responsive"><table class="table table-vcenter card-table sf-rules">
+          <div class="table-responsive"><table class="table table-vcenter card-table rr-rules">
             <thead><tr><th style="width:32%">Path</th><th style="width:12%">Operator</th><th style="width:20%">Value</th><th>Comment</th><th></th></tr></thead>
             <tbody id="pfRules"></tbody></table></div>
           <datalist id="pfPaths"></datalist>
@@ -305,7 +305,7 @@ function renderProfileEditor() {
 // Assignment in the profile editor: devices in addition to match, or excluded despite match
 function renderAssign() {
   const d = prof.edit.draft;
-  const chip = (id, list) => `<span class="badge bg-azure-lt sf-chip me-1 mb-1">${esc(devName(id))}<button type="button" data-chip="${list}" data-id="${esc(id)}" aria-label="Remove ${esc(devName(id))}">×</button></span>`;
+  const chip = (id, list) => `<span class="badge bg-azure-lt rr-chip me-1 mb-1">${esc(devName(id))}<button type="button" data-chip="${list}" data-id="${esc(id)}" aria-label="Remove ${esc(devName(id))}">×</button></span>`;
   const opts = prof.devices.filter((x) => !d.devices.includes(x.id) && !d.exclude.includes(x.id))
     .map((x) => `<option value="${esc(x.id)}">${esc(x.name || x.id)} · ${esc(x.model_name || x.app)}</option>`).join("");
   $("#pfAssign").innerHTML = `

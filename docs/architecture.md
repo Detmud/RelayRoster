@@ -35,9 +35,11 @@ tools/fetch_vendor.py  Downloads Tabler CSS from npm and checks the SHA-256
 
 ## Frontend
 
-Tabler admin layout with a sidebar (`#sidebar`). Pages are `<div id="tab-<name>" class="sf-tab">`; title and
+Tabler admin layout with a sidebar (`#sidebar`). Pages are `<div id="tab-<name>" class="rr-tab">`; title and
 description live in `PAGES` in `static/js/main.js`, page actions in the header via `data-actions="<name>"`. Routing
 uses the URL hash (`#devices?sort=…`). The device page is the only dynamic page: `#device/<id>[/<tab>]`.
+Own CSS classes and variables in `static/style.css` carry the `rr-` prefix (RelayRoster) to keep them apart from Tabler.
+
 
 Script order is defined in `index.html`; all files share one global scope. New page: entry in `PAGES`, `nav-item` in
 the sidebar, pane `#tab-<name>`, script in `index.html`.

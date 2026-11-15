@@ -27,15 +27,15 @@ function cfgInput(f) {
   if (f.kind === "enum") {
     const opts = [...(f.options || [])];
     if (!opts.some((o) => cfgSame(o, f.value))) opts.unshift(f.value);
-    return `<select class="form-select form-select-sm sf-cfg-in${bad}" ${attr}>${opts.map((o) =>
+    return `<select class="form-select form-select-sm rr-cfg-in${bad}" ${attr}>${opts.map((o) =>
       `<option value="${esc(JSON.stringify(o))}"${cfgSame(o, v) ? " selected" : ""}>${esc(o === null ? "none" : o)}</option>`).join("")}</select>`;
   }
   if (f.kind === "number") {
     const lim = `${f.min !== undefined ? ` min="${esc(f.min)}"` : ` min="0"`}${f.max !== undefined ? ` max="${esc(f.max)}"` : ""}`;
     const input = `<input class="form-control${bad}" type="number" step="any" inputmode="decimal"${lim} value="${esc(v ?? "")}" ${attr}>`;
-    return `<div class="input-group input-group-sm sf-cfg-in ms-auto">${input}${f.unit ? `<span class="input-group-text">${esc(f.unit)}</span>` : ""}</div>`;
+    return `<div class="input-group input-group-sm rr-cfg-in ms-auto">${input}${f.unit ? `<span class="input-group-text">${esc(f.unit)}</span>` : ""}</div>`;
   }
-  return `<input class="form-control form-control-sm sf-cfg-in ms-auto${bad}" type="text" maxlength="255" value="${esc(v ?? "")}"${v === null ? ` placeholder="none"` : ""} ${attr}>`;
+  return `<input class="form-control form-control-sm rr-cfg-in ms-auto${bad}" type="text" maxlength="255" value="${esc(v ?? "")}"${v === null ? ` placeholder="none"` : ""} ${attr}>`;
 }
 
 const cfgUseBtn = (f, value, title) => `<button class="btn btn-sm btn-ghost-primary" type="button" data-cfg-use="${esc(f.path)}"
@@ -60,7 +60,7 @@ function cfgSet(path, value) {
   cfgEdit.review = null;
   cfgEdit.notice = null;
   const row = $(`[data-cfg-row="${CSS.escape(path)}"]`);
-  row?.classList.toggle("sf-changed", cfgHas(path));
+  row?.classList.toggle("rr-changed", cfgHas(path));
   const input = row && $("[data-cfg]", row);
   if (input) {
     input.classList.toggle("is-invalid", !!cfgEdit.errors[path]);
@@ -73,13 +73,13 @@ function cfgBarHtml() {
   if (cfgEdit.id !== devState.id) return "";
   const r = cfgEdit.review;
   if (r) {
-    const rows = r.rows.map((x) => `<tr><td>${esc(x.label)}<span class="sf-sub">${esc(x.path)}</span></td>
-        <td class="sf-old">${diffVal(x.old)}</td><td class="sf-new">${diffVal(x.new)}${x.unit && typeof x.new === "number" ? ` ${esc(x.unit)}` : ""}</td></tr>`).join("");
+    const rows = r.rows.map((x) => `<tr><td>${esc(x.label)}<span class="rr-sub">${esc(x.path)}</span></td>
+        <td class="rr-old">${diffVal(x.old)}</td><td class="rr-new">${diffVal(x.new)}${x.unit && typeof x.new === "number" ? ` ${esc(x.unit)}` : ""}</td></tr>`).join("");
     const calls = r.calls.map((c) => `${c.method} ${JSON.stringify(c.params)}`).join("\n");
     return `<div class="card mb-3 border-primary"><div class="card-header"><h3 class="card-title">Review ${r.rows.length} change${r.rows.length === 1 ? "" : "s"}</h3></div>
       ${cardTable(["Setting", "Current", "New"], rows)}
       <div class="card-body border-top"><div class="text-secondary small mb-1">RelayRoster sends exactly these calls, then reads the device again and checks every value:</div>
-        <pre class="sf-json mb-0" id="cfgCalls">${esc(calls)}</pre></div>
+        <pre class="rr-json mb-0" id="cfgCalls">${esc(calls)}</pre></div>
       <div class="card-footer d-flex flex-wrap gap-2 justify-content-end">
         <button class="btn" type="button" data-cfg-back${cfgEdit.busy ? " disabled" : ""}>Back to editing</button>
         <button class="btn btn-primary" type="button" data-cfg-write${cfgEdit.busy ? " disabled" : ""}>${cfgEdit.busy ? "Writing …" : "Write to device"}</button></div></div>`;
@@ -89,7 +89,7 @@ function cfgBarHtml() {
   if (!n) return notice;
   const bad = Object.keys(cfgEdit.errors).length;
   return `${notice}<div class="card card-sm mb-3 border-primary"><div class="card-body d-flex flex-wrap align-items-center gap-2">
-      <div class="me-auto"><strong>Pending changes (${n})</strong><span class="sf-sub">${esc(Object.keys(cfgEdit.draft).sort().join(", "))}</span></div>
+      <div class="me-auto"><strong>Pending changes (${n})</strong><span class="rr-sub">${esc(Object.keys(cfgEdit.draft).sort().join(", "))}</span></div>
       <button class="btn" type="button" data-cfg-discard>Discard</button>
       <button class="btn btn-primary" type="button" data-cfg-review${bad ? ` disabled title="Fix the highlighted fields first"` : ""}>Review &amp; write</button></div></div>`;
 }
@@ -179,7 +179,7 @@ function wireCfg() {
       const y = window.scrollY;
       renderDeviceTab();
       window.scrollTo(0, y);
-      const main = $(".sf-cfg-main");
+      const main = $(".rr-cfg-main");
       if (main && main.getBoundingClientRect().top < 0) main.scrollIntoView({ block: "start" });
       return;
     }
@@ -222,8 +222,8 @@ async function toggleDiff(snapId) {
     const { body } = await api(`api/snapshots/${snapId}/diff`);
     cell.innerHTML = body.changes.length ? `<table class="table table-sm mb-0"><thead><tr><th>Path</th><th>Before</th><th>After</th></tr></thead><tbody>
       ${body.changes.map((c) => `<tr><td class="font-monospace small">${esc(c.path)}</td>
-        <td class="sf-old">${c.kind === "added" ? `<span class="text-secondary">–</span>` : diffVal(c.old)}</td>
-        <td class="sf-new">${c.kind === "removed" ? `<span class="text-secondary">removed</span>` : diffVal(c.new)}</td></tr>`).join("")}
+        <td class="rr-old">${c.kind === "added" ? `<span class="text-secondary">–</span>` : diffVal(c.old)}</td>
+        <td class="rr-new">${c.kind === "removed" ? `<span class="text-secondary">removed</span>` : diffVal(c.new)}</td></tr>`).join("")}
       </tbody></table>` : `<span class="text-secondary">No differences.</span>`;
   } catch (e) { cell.innerHTML = `<span class="text-red">${esc(e.message)}</span>`; }
 }

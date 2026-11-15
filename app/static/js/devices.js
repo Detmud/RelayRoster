@@ -125,7 +125,7 @@ function syncViewControls() {
     // Type from a shared link that does not exist (yet): show it anyway instead of silently ignoring it
     if (view[k] && ![...el.options].some((o) => o.value === view[k])) el.add(new Option(view[k], view[k]));
     el.value = view[k];
-    el.classList.toggle("sf-active", !!view[k]);
+    el.classList.toggle("rr-active", !!view[k]);
   }
   $$("#devTable .table-sort").forEach((b) => {
     const on = b.dataset.sort === view.sort;
@@ -160,8 +160,8 @@ function renderDevices() {
   $("#devCount").textContent = total ? (filtered ? `${rows.length} of ${total} devices` : `${total} device${total === 1 ? "" : "s"}`) : "";
   $("#devTable tbody").innerHTML = rows.map((d) => `
     <tr class="cursor-pointer" data-id="${esc(d.id)}">
-      <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="sf-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
-      <td>${typeLabel(d)}<span class="sf-sub">${esc(d.model || "")} · Gen${esc(d.gen ?? "?")}</span></td>
+      <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
+      <td>${typeLabel(d)}<span class="rr-sub">${esc(d.model || "")} · Gen${esc(d.gen ?? "?")}</span></td>
       <td class="text-nowrap"><a class="font-monospace small" href="http://${esc(d.host)}/" target="_blank" rel="noopener noreferrer" data-stop>${esc(d.host)}</a>${addressBadge(d)}</td>
       <td class="font-monospace small">${esc(d.ver || "–")}${d.updates?.stable ? ` ${badge("info", `→ ${d.updates.stable}`, "Stable update available")}` : ""}</td>
       <td>${rssiBadge(d.rssi)}</td>
@@ -193,14 +193,17 @@ function fixGroups() {
   return groups;
 }
 
+// Source text is left out when it only repeats the badge (firmware findings: "Firmware")
+const sameWord = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
+
 function findingRows(fs, withNote, groups = null) {
   return fs.map((f) => {
     const ids = groups && f.kind === "mismatch" && f.fixable ? groups.get(fixKey(f)) || [] : null;
     return `<tr>
-    <td class="font-monospace small">${esc(f.path)}${withNote && f.note ? `<span class="sf-sub">${esc(f.note)}</span>` : ""}</td>
+    <td class="font-monospace small">${esc(f.path)}${withNote && f.note ? `<span class="rr-sub">${esc(f.note)}</span>` : ""}</td>
     <td>${valHtml(f.expected)}</td>
     <td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td>
-    <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)} <span class="text-secondary small">${esc(f.source)}</span></td>
+    <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)}${sameWord(f.source, KIND_LABEL[f.kind] || f.kind) ? "" : ` <span class="text-secondary small">${esc(f.source)}</span>`}</td>
     ${groups ? `<td class="text-end text-nowrap">${ids ? `<button class="btn btn-sm" type="button" data-fix="${esc(fixKey(f))}"
       title="Write ${esc(fmtVal(f.target))} to ${esc(f.path)} on every device with this finding">${ids.length > 1 ? `Fix on all (${ids.length})` : "Fix"}</button>` : ""}</td>` : ""}
   </tr>`;
@@ -233,7 +236,7 @@ function renderPlanBar() {
   const unknown = data.names_unknown || [];
   const parts = [];
   if (n) {
-    parts.push(`<div class="d-flex align-items-center gap-3 flex-wrap"><div class="flex-fill sf-minw0">
+    parts.push(`<div class="d-flex align-items-center gap-3 flex-wrap"><div class="flex-fill rr-minw0">
       <strong>${n} device${n === 1 ? "" : "s"}</strong> differ${n === 1 ? "s" : ""} from the naming plan (<code>names:</code> in the policy).
       ${allowRename ? "" : `<span class="text-secondary">Turn on config changes in <a href="#settings">Settings</a> to write the names to the devices.</span>`}</div>
       ${allowRename ? `<button class="btn btn-primary btn-sm" id="planOpen" type="button">Apply naming plan</button>` : ""}</div>`);
@@ -266,7 +269,8 @@ function renderDrift() {
         <div><h3 class="card-title">${devLink(id, d.name || id)}</h3><div class="text-secondary small">${esc(d.model_name || d.app || "")} · <span class="font-monospace" title="${esc(id)}">${esc(d.mac || id)}</span></div></div>
         <div class="card-actions"><a class="btn btn-sm" href="${devHref(id, "findings")}">Details</a></div>
       </div>
-      <div class="table-responsive"><table class="table table-vcenter card-table">
+      <div class="table-responsive"><table class="table table-vcenter card-table rr-findings">
+        <colgroup><col class="rr-c-path"><col class="rr-c-val"><col class="rr-c-val"><col class="rr-c-src"><col class="rr-c-act"></colgroup>
         <thead><tr><th>Path</th><th>Expected</th><th>Actual</th><th>Source</th><th></th></tr></thead>
         <tbody>${findingRows(fs, true, groups)}</tbody>
       </table></div></div>`;
@@ -288,11 +292,11 @@ function peerHiddenBlock(g, cols) {
   const hs = g.hidden || [];
   if (!hs.length) return "";
   const rows = hs.map((r) => `<tr>
-    <td class="font-monospace small">${esc(r.path)}<span class="sf-sub">${esc(r.note)}</span></td>
+    <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${esc(r.note)}</span></td>
     ${g.devices.map((d) => `<td>${valHtml(r.values[d.id])}</td>`).join("")}</tr>`).join("");
-  return `<details class="sf-peer-more border-top">
+  return `<details class="rr-peer-more border-top">
       <summary class="card-body py-2 text-secondary small">${hs.length} difference${hs.length === 1 ? "" : "s"} hidden (setting has no effect or cannot be changed)</summary>
-      <div class="table-responsive"><table class="table table-vcenter card-table sf-hidden">
+      <div class="table-responsive"><table class="table table-vcenter card-table rr-hidden">
       <thead><tr><th>Path</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
     </details>`;
 }
@@ -300,16 +304,16 @@ function peerHiddenBlock(g, cols) {
 function peerGroupBody(g) {
   const n = g.diffs.length;
   const info = `<div class="card-body border-bottom py-2 d-flex align-items-center gap-2 flex-wrap">
-    <div class="text-secondary small flex-fill sf-minw0">${g.devices.length} devices · firmware ${g.versions.map(esc).join(", ")}</div>
+    <div class="text-secondary small flex-fill rr-minw0">${g.devices.length} devices · firmware ${g.versions.map(esc).join(", ")}</div>
     ${n ? badge("warn", `${n} difference${n === 1 ? "" : "s"}`) : badge("ok", "uniform")}</div>`;
   const cols = g.devices.map((d) => `<th title="${esc(d.id)}">${devLink(d.id, d.name || d.id)}</th>`).join("");
   const extra = peerHiddenBlock(g, cols);
   if (!n) return `${info}<div class="card-body text-secondary">All compared settings are identical.</div>${extra}`;
   const rows = g.diffs.map((r) => `<tr>
-    <td class="font-monospace small">${esc(r.path)}<span class="sf-sub">${r.has_majority ? `majority: ${esc(fmtVal(r.majority))}` : "no majority"}</span></td>
+    <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${r.has_majority ? `majority: ${esc(fmtVal(r.majority))}` : "no majority"}</span></td>
     ${g.devices.map((d) => {
       const v = r.values[d.id];
-      const cls = [r.outliers.includes(d.id) ? "sf-outlier" : "", v === "__missing__" ? "sf-missing" : ""].join(" ").trim();
+      const cls = [r.outliers.includes(d.id) ? "rr-outlier" : "", v === "__missing__" ? "rr-missing" : ""].join(" ").trim();
       return `<td class="${cls}">${valHtml(v)}</td>`;
     }).join("")}</tr>`).join("");
   return `${info}<div class="table-responsive"><table class="table table-vcenter card-table">
@@ -333,7 +337,7 @@ function peerSummary(uniform, single, open) {
       <td>${esc(g.model_name || g.app)}${g.profile ? ` ${badge("mode", g.profile)}` : ""}${groupStackBadges(g.devices)}</td>
       <td>${devLink(g.devices[0].id, g.devices[0].name || "(no name)")}</td><td class="text-secondary small">nothing to compare</td></tr>`),
   ].join("");
-  return `<details class="sf-peer-more border-top" id="peerSummary"${open ? " open" : ""}>
+  return `<details class="rr-peer-more border-top" id="peerSummary"${open ? " open" : ""}>
       <summary class="card-body py-2 text-secondary small">${parts.join(" · ")}</summary>
       <div class="table-responsive"><table class="table table-vcenter card-table table-hover">
       <thead><tr><th>Type</th><th>Devices</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -358,10 +362,10 @@ function renderPeers() {
   // Stored tab points to a type without deviations by now: fall back to the first one with deviations
   if (!differing.some((g) => peerKey(g) === peerSel)) peerSel = differing[0] ? peerKey(differing[0]) : null;
 
-  const scrollX = $(".sf-peer-tabs", box)?.scrollLeft || 0;
+  const scrollX = $(".rr-peer-tabs", box)?.scrollLeft || 0;
   let head, body;
   if (differing.length) {
-    head = `<div class="card-header sf-peer-head"><ul class="nav nav-pills sf-peer-tabs" role="tablist" aria-label="Device types">${differing.map((g) => {
+    head = `<div class="card-header rr-peer-head"><ul class="nav nav-pills rr-peer-tabs" role="tablist" aria-label="Device types">${differing.map((g) => {
       const on = !peek && peerKey(g) === peerSel;
       const n = g.diffs.length;
       return `<li class="nav-item"><button class="nav-link${on ? " active" : ""}" type="button" role="tab" aria-selected="${on}" data-peer="${esc(peerKey(g))}">${esc(peerLabel(g))}${groupStackBadges(g.devices)} ${badge("warn", n, `${n} difference${n === 1 ? "" : "s"}`)}</button></li>`;
@@ -377,7 +381,7 @@ function renderPeers() {
     body = differing.length ? peerGroupBody(differing.find((g) => peerKey(g) === peerSel)) : "";
   }
   box.innerHTML = `<div class="card">${head}${body}${peerSummary(uniform, single, summaryOpen)}</div>`;
-  const tabsEl = $(".sf-peer-tabs", box);
+  const tabsEl = $(".rr-peer-tabs", box);
   if (tabsEl) tabsEl.scrollLeft = scrollX;
   $$("[data-peer]", box).forEach((b) => b.addEventListener("click", () => {
     peerSel = b.dataset.peer;
@@ -395,7 +399,7 @@ function renderPeers() {
 // Short values inline, multi-line ones (script code, objects) as a block
 function diffVal(v) {
   const s = fmtVal(v);
-  return s.includes("\n") || s.length > 60 ? `<pre class="sf-json">${esc(s)}</pre>` : `<span class="sf-val">${esc(s)}</span>`;
+  return s.includes("\n") || s.length > 60 ? `<pre class="rr-json">${esc(s)}</pre>` : `<span class="rr-val">${esc(s)}</span>`;
 }
 
 const fwOffers = () => data.devices.filter((d) => d.updates?.stable);
@@ -407,7 +411,7 @@ const fwBtn = (attr, label, cls = "btn-sm") => allowFirmware
 function renderFirmware() {
   const offers = fwOffers();
   $("#fwBar").innerHTML = offers.length ? `<div class="card mb-3"><div class="card-body d-flex align-items-center gap-3 flex-wrap">
-      <div class="flex-fill sf-minw0"><strong>${offers.length} device${offers.length === 1 ? "" : "s"}</strong> with a stable update.
+      <div class="flex-fill rr-minw0"><strong>${offers.length} device${offers.length === 1 ? "" : "s"}</strong> with a stable update.
         ${allowFirmware ? "" : fwDisabledHint()}</div>
       ${fwBtn('data-fw-open="all"', `Update all (${offers.length})`, "")}
     </div></div>` : "";
@@ -426,11 +430,11 @@ function renderFirmware() {
         ${n > 1 ? fwBtn(`data-fw-open="app:${esc(g.app)}"`, `Update ${n}`) : ""}
       </div>
     </div>
-    <div class="table-responsive"><table class="table table-vcenter card-table table-hover sf-fw-table">
-      <colgroup><col><col class="sf-fw-ver"><col class="sf-fw-ver"><col class="sf-fw-ver"><col class="sf-fw-act"></colgroup>
+    <div class="table-responsive"><table class="table table-vcenter card-table table-hover rr-fw-table">
+      <colgroup><col><col class="rr-fw-ver"><col class="rr-fw-ver"><col class="rr-fw-ver"><col class="rr-fw-act"></colgroup>
       <thead><tr><th>Device</th><th>Installed</th><th>Stable available</th><th>Beta available</th><th></th></tr></thead>
       <tbody>${g.devices.map((d) => `<tr class="cursor-pointer" data-id="${esc(d.id)}">
-        <td>${devLink(d.id, d.name || "(no name)")}<span class="sf-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
+        <td>${devLink(d.id, d.name || "(no name)")}<span class="rr-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
         <td class="font-monospace small">${esc(d.ver || "–")}${d.ver !== g.newest_installed ? ` ${badge("warn", "older")}` : ""}</td>
         <td class="font-monospace small">${esc(d.updates?.stable || "–")}</td>
         <td class="font-monospace small text-secondary">${esc(d.updates?.beta || "–")}</td>
