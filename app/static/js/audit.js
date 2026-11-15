@@ -1,6 +1,6 @@
 "use strict";
 // Part of the UI, loads after app.js; shared global scope, order defined in index.html
-// ---- Audit log across all devices --------------------------------------------------------
+// ---- Activity (the audit log) across all devices --------------------------------------------------------
 
 const AUDIT_WHAT = { rename: "Name", firmware: "Firmware", reboot: "Restart", config: "Setting", auth: "Password",
   settings: "Settings", policy: "Policy" };

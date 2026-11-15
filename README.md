@@ -23,7 +23,7 @@ where they deviate from the state you want, or from each other. Everything stays
 - **Bulk changes**: change one setting on many devices at once
 
 **Read-only by default.** Every write function (configuration, firmware updates, restarts, device passwords) has
-its own switch and is off until you turn it on. Every write is recorded in an audit log.
+its own switch and is off until you turn it on. Every write is recorded and shown on the Activity page.
 
 ## Quick start
 
