@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Dashboard: the tile "Firmware updates" is now "Updates" and opens the device list filtered by "Update available"
+
 - Every table can be sorted by a click on a column heading (ascending, descending, back to the default order);
   pages remember the sort per table
 - Dashboard: "Needs attention" shows the address as first column, links it to the device and can be sorted;
