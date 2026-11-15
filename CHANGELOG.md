@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 - Community files: CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, issue and pull request templates
+- Trademark notice in the footer of the app and on the sign-in page
 
 ## [1.0.0] - 2026-11-15
 
