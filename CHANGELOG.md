@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Every table can be sorted by a click on a column heading (ascending, descending, back to the default order);
+  pages remember the sort per table
+- Dashboard: "Needs attention" shows the address as first column, links it to the device and can be sorted;
+  "Device types" can be sorted
+
 - Dates, times and numbers follow the browser's locale and time zone, with a four-digit year and without "at";
   log tables (Activity, Backups) show seconds. Every time has the full ISO 8601 time with offset as tooltip
 

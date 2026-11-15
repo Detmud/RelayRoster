@@ -276,7 +276,8 @@
 .rr-devbar .rr-search { flex: 1 1 12rem; }
 .rr-select { width: auto; flex: 0 1 auto; }
 .rr-select.rr-active { border-color: var(--tblr-primary); color: var(--tblr-primary); }
-#devTable th .table-sort { white-space: nowrap; background: transparent; }
+.table th .table-sort { white-space: nowrap; background: transparent; }
+.table th.text-end .table-sort { margin-right: 0; }
 @media (max-width: 767.98px) {
   .rr-devbar .rr-search { flex-basis: 100%; }
   .rr-select { flex: 1 1 calc(50% - .25rem); min-width: 0; }

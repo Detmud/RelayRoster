@@ -113,6 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const firstDir = key === "findings" ? "desc" : "asc";
     setView(view.sort === key ? { dir: view.dir === "asc" ? "desc" : "asc" } : { sort: key, dir: firstDir });
   }));
+  $$("#attnTable .table-sort").forEach((b) => b.addEventListener("click", () => {
+    const key = b.dataset.sort;
+    attnSort = attnSort.key === key ? { key, dir: attnSort.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" };
+    render();
+  }));
   const resetFilters = () => setView({ ...VIEW_DEFAULT, sort: view.sort, dir: view.dir });
   $("#devReset").addEventListener("click", resetFilters);
   $("#devReset2").addEventListener("click", resetFilters);
