@@ -161,7 +161,7 @@ function renderDevices() {
   $("#devTable tbody").innerHTML = rows.map((d) => `
     <tr class="cursor-pointer" data-id="${esc(d.id)}">
       <td><div class="fw-bold">${devLink(d.id, d.name || "(no name)")}</div><span class="rr-sub" title="${esc(d.id)}">${esc(d.mac || d.id)}</span></td>
-      <td>${typeLabel(d)}<span class="rr-sub">${esc(d.model || "")} · Gen${esc(d.gen ?? "?")}</span></td>
+      <td>${typeLabel(d)}${typeSub(d)}</td>
       <td class="text-nowrap"><a class="font-monospace small" href="http://${esc(d.host)}/" target="_blank" rel="noopener noreferrer" data-stop>${esc(d.host)}</a>${addressBadge(d)}</td>
       <td class="font-monospace small">${esc(d.ver || "–")}${d.updates?.stable ? ` ${badge("info", `→ ${d.updates.stable}`, "Stable update available")}` : ""}</td>
       <td>${rssiBadge(d.rssi)}</td>

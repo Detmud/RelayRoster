@@ -218,7 +218,7 @@ def peer_groups(devices: list[dict[str, Any]], configs: dict[str, dict[str, Any]
         versions = sorted({d.get("ver") or "?" for d in members}, key=version_key)
         result.append({
             "app": app,
-            "model_name": model_name(members[0].get("model"), app),
+            "model_name": model_name(members[0].get("model"), app, members[0].get("gen")),
             "profile": profile,
             "devices": [{"id": d["id"], "name": d.get("name"), "ver": d.get("ver")} for d in members],
             "versions": versions,

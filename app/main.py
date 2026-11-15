@@ -26,7 +26,7 @@ from . import apply as applymod, compare, devicepage, policy as pol, policy_edit
 from .auth import COOKIE, FLOW_COOKIE, FLOW_MAX_AGE, MAX_AGE, Auth
 from .collector import Collector, ConfigError, ConfigInvalid, RebootError, RenameError
 from .config import Settings, settings as default_settings
-from .models import format_mac, model_name
+from .models import format_mac, model_name, type_fields
 from .oidc import OIDC, OIDCError, pkce_pair
 from .runtime_settings import RuntimeSettings, SettingsError
 from .store import Store
@@ -360,7 +360,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             config, concrete=concrete, depends=peer_depends(policy_data), outliers=devicepage.outlier_map(peer))
         row = next((r for r in rep["devices"] if r["id"] == device_id), {})
         raw_dev = dev
-        dev = {**dev, "mac": format_mac(dev.get("mac")), "model_name": model_name(dev.get("model"), dev.get("app")),
+        dev = {**dev, "mac": format_mac(dev.get("mac")), **type_fields(dev),
                "updates": row.get("updates"), "stale": row.get("stale"), "has_snapshot": row.get("has_snapshot"),
                "profiles": row.get("profiles") or [], "caps": row.get("caps")}
         # Assignment: per profile, whether it applies via match, assignment or not at all
@@ -420,7 +420,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             planned = (policy_data.get("names") or {}).get(dev["id"])
             if planned is not None and planned != dev.get("name"):
                 out.append({"device_id": dev["id"], "host": dev["host"], "app": dev.get("app"),
-                            "model_name": model_name(dev.get("model"), dev.get("app")),
+                            "model_name": model_name(dev.get("model"), dev.get("app"), dev.get("gen")),
                             "current": dev.get("name"), "planned": planned})
         return sorted(out, key=lambda x: x["planned"].lower())
 

@@ -46,7 +46,7 @@ def _row(path: str, actual: Any, new: Any, status: str, note: str | None = None)
 
 def _device_head(d: dict[str, Any]) -> dict[str, Any]:
     return {"device_id": d["id"], "name": d.get("name"), "host": d.get("host"),
-            "model_name": model_name(d.get("model"), d.get("app"))}
+            "model_name": model_name(d.get("model"), d.get("app"), d.get("gen"))}
 
 
 def _finish(collector: Collector, d: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:

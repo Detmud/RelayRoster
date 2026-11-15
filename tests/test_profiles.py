@@ -96,7 +96,7 @@ def test_profiles_api_roundtrip():
         rule = next(r for r in shutter["settings"] if r["path"] == "cover:*.obstruction_detection.holdoff")
         assert rule == {"path": "cover:*.obstruction_detection.holdoff", "op": "max", "value": 1,
                         "comment": "detection is off during hold-off, keep it short"}
-        assert any(x["value"] == "S2PMG4" and x["label"] == "Shelly 2PM Gen4" for x in body["choices"]["app"])
+        assert any(x["value"] == "S2PMG4" and x["label"] == "Shelly 2PM · Gen4" for x in body["choices"]["app"])
         assert [t["name"] for t in body["templates"]] == ["Shutter", "Button input"]
 
         # Preview: nothing saved, matching devices, actual values and deviations

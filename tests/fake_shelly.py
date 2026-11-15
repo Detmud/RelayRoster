@@ -23,7 +23,7 @@ class _RpcFault(Exception):
 
 class FakeShelly:
     def __init__(self, dev_id: str, app: str, model: str, ver: str, config: dict[str, Any], *,
-                 gen: int = 2, profile: str | None = None, stable: str | None = None,
+                 gen: int | None = None, profile: str | None = None, stable: str | None = None,
                  scripts: list[dict[str, Any]] | None = None, kvs: dict[str, Any] | None = None,
                  kvs_dict_format: bool = False, password: str | None = None,
                  schedules: list[dict[str, Any]] | None = None, webhooks: list[dict[str, Any]] | None = None):
@@ -31,7 +31,8 @@ class FakeShelly:
         self.app = app
         self.model = model
         self.ver = ver
-        self.gen = gen
+        # like real devices: Gen3/Gen4 firmware families end in G3/G4, Plus and Pro are Gen2
+        self.gen = gen or (int(app[-1]) if app[-2:] in ("G3", "G4") else 2)
         self.profile = profile
         self.config = config
         self.stable = stable

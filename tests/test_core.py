@@ -995,15 +995,23 @@ def test_device_settings_view():
 
 
 def test_models():
-    # Order numbers from a real fleet
-    assert models.model_name("S4SW-002P16EU", "S2PMG4") == "Shelly 2PM Gen4"
-    assert models.model_name("S3SW-001P8EU") == "Shelly 1PM Mini Gen3"
-    assert models.model_name("SNSN-0024X", "PlusI4") == "Shelly Plus i4"
-    assert models.model_name("snsw-102p16eu") == "Shelly Plus 2PM", "case does not matter"
+    # Function first, then generation, form factor (Pro, Mini; Standard hidden) and suffix
+    assert models.model_name("S4SW-002P16EU", "S2PMG4") == "Shelly 2PM · Gen4"
+    assert models.model_name("S3SW-001P8EU") == "Shelly 1PM · Gen3 · Mini"
+    assert models.model_name("SNSN-0024X", "PlusI4") == "Shelly i4 · Gen2", "Plus is Gen2, not part of the name"
+    assert models.model_name("snsw-102p16eu") == "Shelly 2PM · Gen2", "case does not matter"
+    assert models.model_name("SPSW-202PE16EU", None, 2) == "Shelly 2PM · Gen2 · Pro"
+    assert models.model_name("SNSN-0D24X") == "Shelly i4 · Gen2 · DC"
+    assert models.model_name("SNPL-00112UK") == "Shelly Plug · Gen2 · UK"
+    t = models.device_type("SNSW-001X8EU", "Plus1Mini", 2)
+    assert (t["kind"], t["variant"], t["suffix"], t["type_name"], t["type_sub"]) == ("1", "Mini", "", "Shelly 1", "Gen2 · Mini")
+    assert models.device_type("SNSN-0D24X")["variant"] == "Standard", "DC is a suffix, not a form factor"
+    assert models.device_type("S4SW-002P16EU", None, "5")["gen"] == 5, "the generation reported by the device wins"
     # unknown order number: from the firmware family
-    assert models.model_name("XXXX-1", "Plus1PM") == "Shelly Plus 1PM"
+    assert models.model_name("XXXX-1", "Plus1PM") == "Shelly 1PM · Gen2"
     assert models.model_name("XXXX-1", "ProDimmer1PM") == "Shelly Pro Dimmer 1PM"
-    assert models.model_name("XXXX-1", "Foo2PMG4") == "Shelly Foo 2PM Gen4"
+    assert models.model_name("XXXX-1", "Foo2PMG4") == "Shelly Foo 2PM · Gen4"
+    assert models.device_type("XXXX-1", "Foo2PMG4")["kind"] == "unknown"
     assert models.model_name("XXXX-1", None) == "XXXX-1"
     assert models.model_name(None, None) == "Shelly"
     assert models.format_mac("1020BA000201") == "10:20:BA:00:02:01"
