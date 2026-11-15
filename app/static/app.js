@@ -30,6 +30,9 @@ function fmtVal(v) {
   if (typeof v === "string") return v;
   return JSON.stringify(v);
 }
+// First cell of a row about a setting: readable name, then the note (what is wrong), then the path in small
+// monospace. The path stays visible because the policy is written in paths.
+const settingCell = (r, note) => `<td><div class="fw-medium">${esc(r.label || r.path)}</div>${note ? `<div>${esc(note)}</div>` : ""}${r.label && r.label !== r.path ? `<span class="rr-sub">${esc(r.path)}</span>` : ""}</td>`;
 const valHtml = (v) => `<span class="rr-val">${esc(fmtVal(v))}</span>`;
 
 // Times: one helper set for the whole UI. Absolute times follow the browser's locale and time zone

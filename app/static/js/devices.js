@@ -195,7 +195,7 @@ function findingRows(fs, withNote, groups = null) {
   return fs.map((f) => {
     const ids = groups && f.kind === "mismatch" && f.fixable ? groups.get(fixKey(f)) || [] : null;
     return `<tr>
-    <td class="font-monospace small">${esc(f.path)}${withNote && f.note ? `<span class="rr-sub">${esc(f.note)}</span>` : ""}</td>
+    ${settingCell(f, withNote ? f.note : "")}
     <td>${valHtml(f.expected)}</td>
     <td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td>
     <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)}${sameWord(f.source, KIND_LABEL[f.kind] || f.kind) ? "" : ` <span class="text-secondary small">${esc(f.source)}</span>`}</td>
@@ -266,7 +266,7 @@ function renderDrift() {
       </div>
       <div class="table-responsive"><table class="table table-vcenter card-table rr-findings">
         <colgroup><col class="rr-c-path"><col class="rr-c-val"><col class="rr-c-val"><col class="rr-c-src"><col class="rr-c-act"></colgroup>
-        <thead><tr><th>Path</th><th>Expected</th><th>Actual</th><th>Source</th><th></th></tr></thead>
+        <thead><tr><th>Finding</th><th>Expected</th><th>Actual</th><th>Source</th><th></th></tr></thead>
         <tbody>${findingRows(fs, true, groups)}</tbody>
       </table></div></div>`;
   }).join("");
@@ -287,12 +287,12 @@ function peerHiddenBlock(g, cols) {
   const hs = g.hidden || [];
   if (!hs.length) return "";
   const rows = hs.map((r) => `<tr>
-    <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${esc(r.note)}</span></td>
+    ${settingCell(r, r.note)}
     ${g.devices.map((d) => `<td>${valHtml(r.values[d.id])}</td>`).join("")}</tr>`).join("");
   return `<details class="rr-peer-more border-top">
       <summary class="card-body py-2 text-secondary small">${hs.length} difference${hs.length === 1 ? "" : "s"} hidden (setting has no effect or cannot be changed)</summary>
       <div class="table-responsive"><table class="table table-vcenter card-table rr-hidden">
-      <thead><tr><th>Path</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
+      <thead><tr><th>Setting</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
     </details>`;
 }
 
@@ -305,14 +305,14 @@ function peerGroupBody(g) {
   const extra = peerHiddenBlock(g, cols);
   if (!n) return `${info}<div class="card-body text-secondary">All compared settings are identical.</div>${extra}`;
   const rows = g.diffs.map((r) => `<tr>
-    <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${r.has_majority ? `majority: ${esc(fmtVal(r.majority))}` : "no majority"}</span></td>
+    ${settingCell(r, r.has_majority ? `Majority: ${fmtVal(r.majority)}` : "No majority")}
     ${g.devices.map((d) => {
       const v = r.values[d.id];
       const cls = [r.outliers.includes(d.id) ? "rr-outlier" : "", v === "__missing__" ? "rr-missing" : ""].join(" ").trim();
       return `<td class="${cls}">${valHtml(v)}</td>`;
     }).join("")}</tr>`).join("");
   return `${info}<div class="table-responsive"><table class="table table-vcenter card-table">
-    <thead><tr><th>Path</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>${extra}`;
+    <thead><tr><th>Setting</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>${extra}`;
 }
 
 // Summary below the tabs: uniform types (click shows the comparison) and single devices (click: detail)

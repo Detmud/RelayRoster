@@ -22,7 +22,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import apply as applymod, compare, devicepage, policy as pol, policy_edit as pe, profiles_view, report
+from . import apply as applymod, compare, devicepage, policy as pol, policy_edit as pe, profiles_view, report, writable
 from .auth import COOKIE, FLOW_COOKIE, FLOW_MAX_AGE, MAX_AGE, Auth
 from .collector import Collector, ConfigError, ConfigInvalid, RebootError, RenameError
 from .config import Settings, settings as default_settings
@@ -123,7 +123,13 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         ignore = (policy_data or {}).get("peer_ignore") or []
         devs = store.devices()
         dev_ignore = {d["id"]: pol.device_ignore(policy_data, d) for d in devs} if policy_data else {}
-        return compare.peer_groups(devs, rep["configs"], ignore, peer_depends(policy_data), dev_ignore)
+        groups = compare.peer_groups(devs, rep["configs"], ignore, peer_depends(policy_data), dev_ignore)
+        for g in groups:
+            for r in (*g["diffs"], *g.get("hidden", [])):
+                r["label"] = devicepage.setting_label(r["path"])
+            for r in g["diffs"]:
+                r["editable"] = writable.is_editable(r["path"])
+        return groups
 
     @app.get("/healthz", include_in_schema=False)
     def healthz() -> dict[str, str]:

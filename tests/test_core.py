@@ -981,12 +981,17 @@ def test_device_settings_view():
     assert dp.field_meta("foo:3.bar_baz.qux", [1])["kind"] == "object"
     assert dp.field_meta("foo:3.bar_baz.qux", 1)["label"] == "Bar baz › qux"
     assert dp.settings_view(None) == {"sections": [], "info": []}
+    # Readable names for findings and the peer comparison; synthetic paths have their own names
+    assert dp.setting_label("switch:0.auto_off") == "Switch 0 · Auto off"
+    assert dp.setting_label("firmware.peer") == "Firmware behind its type" and dp.setting_label("auth") == "Password protection"
+    assert dp.setting_label("cover:1.pos_control") == "Cover 1 · Calibration"
+    assert dp.setting_label("foo:2.bar_baz.qux") == "Foo 2 · Bar baz › qux", "unknown fields keep the fallback"
 
     groups = [{"app": "A", "profile": "", "model_name": "M", "devices": [{"id": "a"}, {"id": "b", "name": "B"}, {"id": "c"}],
                "diffs": [{"path": "p", "values": {"a": 1, "b": 2, "c": 2}, "majority": 2, "has_majority": True,
                           "outliers": ["a"]}]}]
     pv = dp.peer_view(groups, "a")
-    assert pv["diffs"] == [{"path": "p", "value": 1, "majority": 2, "has_majority": True,
+    assert pv["diffs"] == [{"path": "p", "label": "P", "value": 1, "majority": 2, "has_majority": True,
                             "others": [{"id": "b", "name": "B", "value": 2}, {"id": "c", "name": None, "value": 2}]}]
     assert "variants" not in pv and pv["size"] == 3
     assert dp.peer_view(groups, "b")["diffs"] == [], "no outlier"
