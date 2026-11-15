@@ -5,8 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-- Community files: CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, issue and pull request templates
+## [1.0.1] - 2026-11-15
+
 - Trademark notice in the footer of the app and on the sign-in page
+- Image based on Python 3.15; CI tests on the same version
+- FastAPI 0.162.5
+- Community files: CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, issue and pull request templates
 
 ## [1.0.0] - 2026-11-15
 
