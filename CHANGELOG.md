@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Dates, times and numbers follow the browser's locale and time zone, with a four-digit year and without "at";
+  log tables (Activity, Backups) show seconds. Every time has the full ISO 8601 time with offset as tooltip
+
 - "Audit log" is now called **Activity** (`#activity`; `#audit` still works). The CSV export is named
   `relayroster-activity.csv`; the API path `/api/audit` is unchanged
 - The product name is written "RelayRoster" everywhere in the UI

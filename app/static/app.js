@@ -32,12 +32,31 @@ function fmtVal(v) {
 }
 const valHtml = (v) => `<span class="rr-val">${esc(fmtVal(v))}</span>`;
 
-function fmtTime(iso) {
+// Times: one helper set for the whole UI. Absolute times follow the browser's locale and time zone
+// ("16 Nov 2026, 00:15" or "16.11.2026, 00:15"); log-like tables use the long form with seconds.
+// The *Html variants add the full ISO 8601 time with offset as tooltip; tables sort by the timestamp, not the text.
+const TIME_FMT = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+const TIME_FMT_LONG = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
+function fmtTime(iso, long = false) {
   if (!iso) return "–";
   const d = new Date(iso);
   if (isNaN(d)) return iso;
-  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return (long ? TIME_FMT_LONG : TIME_FMT).format(d);
 }
+const fmtTimeLong = (iso) => fmtTime(iso, true);
+// ISO 8601 in local time with offset, e.g. 2026-11-16T00:15:03+01:00
+function isoLocal(iso) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return "";
+  const p = (n) => String(Math.abs(n)).padStart(2, "0");
+  const off = -d.getTimezoneOffset();
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+    + `${off < 0 ? "-" : "+"}${p(Math.trunc(off / 60))}:${p(off % 60)}`;
+}
+const timeTag = (iso, text) => (isoLocal(iso) ? `<time datetime="${esc(isoLocal(iso))}" title="${esc(isoLocal(iso))}">${esc(text)}</time>` : esc(text));
+const timeHtml = (iso) => timeTag(iso, fmtTime(iso));
+const timeLongHtml = (iso) => timeTag(iso, fmtTimeLong(iso));
+const agoHtml = (iso) => timeTag(iso, ago(iso));
 function ago(iso) {
   if (!iso) return "never";
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
@@ -115,7 +134,7 @@ let allowReboot = false;
 let allowSetPassword = false;
 let allowConfig = false;
 
-const num = (n) => Number(n || 0).toLocaleString("en-GB");
+const num = (n) => Number(n || 0).toLocaleString();
 function fmtDuration(sec) {
   if (sec == null) return "";
   if (sec < 60) return `${sec} s`;
@@ -205,6 +224,7 @@ async function pollState() {
       if (s.changed) txt += ` · ${s.changed} changed`;
       if (s.errors) txt += ` · ${s.errors} error${s.errors === 1 ? "" : "s"}`;
       $("#syncText").textContent = txt;
+      $("#syncText").title = isoLocal(st.last_finished);
     }
     // The menu arrow stays usable (ZIP download also works during a run)
     $("#syncBtn").disabled = $("#scanBtn").disabled = st.running;
