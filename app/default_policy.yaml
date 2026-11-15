@@ -1,0 +1,158 @@
+# RelayRoster target policy
+#
+# Paths follow the structure of Shelly.GetConfig, levels separated by dots, e.g.
+#   sys.device.eco_mode, wifi.ap.enable, switch:0.auto_off, cover:0.obstruction_detection.enable
+# A path must point to a single value (leaf), not to a whole section.
+# Wildcards per level: switch:* (all channels), input:*, cover:*. Components a device does not
+# have are skipped (a cover rule does not affect a Plus 1).
+#
+# Target values: a fixed value (true, 0, "Europe/Berlin") or operators:
+#   {in: [a, b]}   {not: x}   {min: 10}   {max: 3000}
+#
+# The "Devices" tab shows the exact app code and profile of every device.
+# This file only defines the target state. Nothing here is written to a device.
+
+firmware:
+  require_latest_stable: true     # finding as soon as the device reports a stable update
+  same_version_per_type: true     # finding when a device is older than others of the same type
+
+security:
+  require_auth: false             # set to true once the devices have a password
+
+cover:
+  require_calibration: true       # finding for every cover the device reports as not calibrated (status pos_control)
+
+# Applies to all devices
+baseline:
+  sys.location.tz: Europe/Berlin
+  sys.location.lat: 52.410801     # site location for sunrise/sunset schedules, same for every device
+  sys.location.lon: 13.545386
+  wifi.ap.enable: false           # device hotspot off once the device is on Wi-Fi
+  # cloud.enable: false
+  # ble.rpc.enable: false        # Bluetooth RPC off (ble.enable no longer exists since firmware 2.0)
+  # sys.device.eco_mode: true
+  # sys.sntp.server: router.lan
+  # mqtt.enable: false
+  # sys.debug.websocket.enable: false
+
+# Profiles per function (not per room). match fields: app, model, profile, name, id, gen (globs allowed, list = or).
+# A profile only sets values that should be the same on every device of that function. Measured values per device
+# (power_limit of one motor) belong in overrides, with a comment why. A device may match several profiles, a later
+# one wins per path.
+profiles:
+  # Roller shutters: protect against tearing off a frozen shutter and against pushing on when something is in
+  # the way, using only the device configuration. The firmware knows no temperature: a frozen shutter shows up as a
+  # power peak right at the start.
+  - name: Shutter
+    match:
+      profile: cover
+    settings:
+      cover:*.obstruction_detection.enable: true
+      cover:*.obstruction_detection.direction: both     # opening (frozen) and closing (obstacle)
+      cover:*.obstruction_detection.action: stop        # not reverse: a frozen shutter has to stay where it is
+      cover:*.obstruction_detection.holdoff: {max: 1}   # detection is off during hold-off, keep it short
+      cover:*.power_limit: {max: 400}                   # second safeguard, also during hold-off. Reports the factory
+                                                        # value (rated power); set the real value per motor in overrides
+      cover:*.initial_state: stopped                    # do not move after a power failure
+      cover:*.in_mode: dual                             # two buttons, up and down
+      cover:*.in_locked: false
+      cover:*.maintenance_mode: false
+      # Calibration is checked from the device status, see cover.require_calibration above
+    # ignore: exempts rules of earlier layers (baseline) and makes any value fine in Peer comparison.
+    # Here: wiring fixed in software, motor wires or button inputs swapped per window
+    ignore:
+      - cover:*.swap_inputs
+      - cover:*.invert_directions
+
+  # Shelly i4 as a pure button input: events single_push, double_push, long_push, btn_down, btn_up.
+  # Switching an input from switch to button changes what other systems receive (event instead of on/off).
+  # For rocker switches that latch, use type: switch in an override for that input.
+  - name: Button input
+    match:
+      app: "*I4*"                                       # Plus i4, i4 Gen3, i4 DC
+    settings:
+      input:*.enable: true
+      input:*.type: button
+      input:*.invert: false
+      input:*.factory_reset: false                      # otherwise pressing several times right after boot resets it
+
+  # - name: Wall switch Plus 1
+  #   match:
+  #     app: Plus1
+  #   settings:
+  #     switch:0.in_mode: detached
+  #     switch:0.initial_state: restore_last
+
+# Overrides for single devices (device ID as shown in the "Devices" tab)
+overrides: {}
+#  shelly2pmg4-1020ba000201:
+#    settings:
+#      cover:0.power_limit: 180   # running power ~140 W measured 2026-11-02, +30 %
+#  shellyplusi4-b8d61a000102:
+#    settings:
+#      input:1.type: switch       # latching rocker switch
+
+# Address plan: the network and address block each Shelly should be in. Reports devices in the DHCP
+# pool (new, no fixed address yet), outside the network or in the wrong block, and suggests the next
+# free address in the block. The first matching block wins. range: 192.168.50.10-19, a.b.c.d-a.b.c.e
+# or CIDR. Devices no block matches show up as "no block".
+# network:
+#   subnet: 192.168.50.0/24
+#   dhcp_pool: 192.168.1.0/24
+#   blocks:
+#     - {name: Plus 1, match: {id: "shellyplus1-*"}, range: 192.168.50.10-19}
+#     - {name: Plus i4, match: {id: "shellyplusi4-*"}, range: 192.168.50.30-39}
+
+# Peer comparison: paths that may differ per device
+peer_ignore:
+  - sys.device.name
+  - sys.device.mac
+  - sys.cfg_rev
+  - sys.ui_data
+  - "*:*.name"                    # channel and input names
+  - wifi.ap.ssid
+  - wifi.sta.ip
+  - wifi.sta.netmask
+  - wifi.sta.gw
+  - wifi.sta.nameserver
+  - wifi.sta1.ip
+  - wifi.sta1.netmask
+  - wifi.sta1.gw
+  - wifi.sta1.nameserver
+  - mqtt.client_id
+  - mqtt.topic_prefix
+  - cover:*.maxtime_open          # calibration result, differs per window
+  - cover:*.maxtime_close
+
+# Peer comparison: dependent settings. A difference in "paths" (minus "except") only counts if "when" holds on at
+# least one of the compared devices, e.g. cloud.server only matters with cloud on. Wildcards in "when" refer to the
+# same component as the path (cover:1.* checks cover:1.*). Differences that have no effect are listed below the
+# table as hidden. Without this key the same rules apply; "peer_depends: []" turns it off.
+peer_depends:
+  - {paths: [cloud.server], when: {cloud.enable: true}}
+  - {paths: ["mqtt.*"], except: [mqtt.enable], when: {mqtt.enable: true}}
+  - {paths: [ws.server, ws.ssl_ca], when: {ws.enable: true}}
+  - {paths: ["wifi.ap.*"], except: [wifi.ap.enable], when: {wifi.ap.enable: true}}
+  - {paths: [wifi.sta.ip, wifi.sta.netmask, wifi.sta.gw, wifi.sta.nameserver], when: {wifi.sta.ipv4mode: static}}
+  - {paths: ["wifi.sta1.*"], except: [wifi.sta1.enable], when: {wifi.sta1.enable: true}}
+  - {paths: [wifi.sta1.ip, wifi.sta1.netmask, wifi.sta1.gw, wifi.sta1.nameserver], when: {wifi.sta1.ipv4mode: static}}
+  - {paths: ["ble.observer.*", "ble.rpc.*"], when: {ble.enable: true}}      # firmware < 2.0 only
+  - paths: ["cover:*.obstruction_detection.*"]
+    except: ["cover:*.obstruction_detection.enable"]
+    when: {"cover:*.obstruction_detection.enable": true}
+  - paths: ["cover:*.safety_switch.*"]
+    except: ["cover:*.safety_switch.enable"]
+    when: {"cover:*.safety_switch.enable": true}
+  - {paths: ["cover:*.slat.*"], except: ["cover:*.slat.enable"], when: {"cover:*.slat.enable": true}}
+  - {paths: ["cover:*.swap_inputs"], when: {"cover:*.in_mode": {not: detached}}}
+  - {paths: ["switch:*.auto_on_delay"], when: {"switch:*.auto_on": true}}
+  - {paths: ["switch:*.auto_off_delay"], when: {"switch:*.auto_off": true}}
+  - {paths: ["switch:*.power_restore_delay"], when: {"switch:*.power_restore_delay_enable": true}}
+  - {paths: ["switch:*.counts.power_thr"], when: {"switch:*.counts.enable": true}}
+  - {paths: ["input:*.*"], except: ["input:*.enable"], when: {"input:*.enable": true}}
+  - paths: ["input:*.report_thr", "input:*.range_map", "input:*.range", "input:*.xpercent"]
+    when: {"input:*.type": analog}
+  - paths: ["input:*.count_rep_thr", "input:*.freq_window", "input:*.freq_rep_thr", "input:*.xcounts", "input:*.xfreq"]
+    when: {"input:*.type": count}
+  - {paths: ["input:*.invert"], when: {"input:*.type": {in: [switch, button, analog]}}}
+  - {paths: ["input:*.factory_reset"], when: {"input:*.type": {in: [switch, button]}}}

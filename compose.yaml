@@ -1,0 +1,28 @@
+# RelayRoster quick start: try it in your own network.
+#
+#   cp .env.example .env               # set SCAN_NETWORKS
+#   docker compose up -d
+#   open http://<host>:8746
+#
+# WARNING: no sign-in in this setup. For permanent use see examples/production/compose.yaml.
+services:
+  relayroster:
+    image: ghcr.io/detmud/relayroster:1    # 1 = newest 1.x release; pin e.g. 1.2.0 for fixed versions
+    # build: .                              # build from source instead (comment out the image line)
+    container_name: relayroster
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8746:8080"
+    volumes:
+      - relayroster-data:/data  # SQLite with snapshots, settings and policy.yaml
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  relayroster-data:

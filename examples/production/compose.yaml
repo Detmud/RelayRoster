@@ -1,0 +1,52 @@
+# RelayRoster for permanent use: sign-in via OIDC, secrets from files, only reachable through a
+# reverse proxy with HTTPS. See docs/installation.md ("Run it permanently").
+#
+#   cd examples/production
+#   cp .env.example .env                                   # fill in OIDC_* and SCAN_NETWORKS
+#   mkdir -p secrets
+#   printf '%s' '<client secret>' > secrets/oidc_client_secret
+#   printf '%s' '<device password or nothing>' > secrets/shelly_password
+#   sudo chown 10003 secrets/* && chmod 600 secrets/*      # readable only by the container user
+#   docker compose up -d
+#
+# Then point your reverse proxy (Caddy, Traefik, nginx …) with HTTPS at 127.0.0.1:8746.
+services:
+  relayroster:
+    image: ghcr.io/detmud/relayroster:1    # 1 = newest 1.x release; pin e.g. 1.2.0 for fixed versions
+    # build: ../..                          # build from source instead (comment out the image line)
+    container_name: relayroster
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      OIDC_CLIENT_SECRET_FILE: /run/secrets/oidc_client_secret
+      SHELLY_PASSWORD_FILE: /run/secrets/shelly_password
+    secrets:
+      - oidc_client_secret
+      - shelly_password
+    ports:
+      - "127.0.0.1:8746:8080"   # only the reverse proxy on this host reaches the app
+    volumes:
+      - relayroster-data:/data  # SQLite with snapshots, settings, device password and policy.yaml: back it up
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      # - apparmor:unconfined   # only if your host's AppArmor profile blocks the container
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+secrets:
+  oidc_client_secret:
+    file: ./secrets/oidc_client_secret
+  shelly_password:
+    file: ./secrets/shelly_password
+
+volumes:
+  relayroster-data:

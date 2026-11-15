@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- RelayRoster. Styles: Tabler (https://tabler.io, MIT). Icons: Tabler Icons (https://tabler.io/icons, MIT,
+     Copyright (c) 2020-2026 Paweł Kuna). Details and license texts: THIRD_PARTY_NOTICES.md -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · RelayRoster</title>
+  <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+  <script src="static/theme.js"></script>
+  <link rel="stylesheet" href="static/vendor/tabler.min.css">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<!-- Sign-in in the Tabler layout "Sign in". Deliberately without app-specific markup except name and logo, so the
+     same page can serve other apps later or be replaced by a central auth service. -->
+<body class="d-flex flex-column">
+<div class="page page-center">
+  <div class="container container-tight py-4">
+    <div class="text-center mb-4">
+      <span class="navbar-brand navbar-brand-autodark d-inline-flex align-items-center gap-2"><svg class="sf-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M13.8 6.2 Q16.5 4 19.6 5.4 L23.6 7.25 20 8.8 C19.1 10.6 20.8 12.1 20.5 15.3 C20.1 19 16.7 20.5 14.9 23.3 H12.7 C12.1 20.6 10.2 19.4 7.7 19.4 H2.5 A1.65 1.65 0 0 1 2.5 16.1 H7.3 Q10.6 16.1 12.2 17.9 Q10.8 14.8 7 14.8 H2.5 A1.65 1.65 0 0 1 2.5 11.5 H7.3 Q10.6 11.5 12.3 13.4 Q11 10.2 7 10.2 H2.5 A1.65 1.65 0 0 1 2.5 6.9 H6.8 Q10.9 6.9 12.8 10.6 Q12.9 7.6 13.8 6.2 Z M1.82 8.55 a0.78 0.78 0 1 0 1.56 0 a0.78 0.78 0 1 0 -1.56 0Z M1.82 13.15 a0.78 0.78 0 1 0 1.56 0 a0.78 0.78 0 1 0 -1.56 0Z M1.82 17.75 a0.78 0.78 0 1 0 1.56 0 a0.78 0.78 0 1 0 -1.56 0Z M16.89 6.95 a0.66 0.66 0 1 0 1.32 0 a0.66 0.66 0 1 0 -1.32 0Z"/><path class="sf-logo-accent" d="M13.8 6.2 C12.5 5.3 11.9 4 12.7 3.35 Q13.45 2.7 14.55 3.75 C14.05 1.4 15.6 .65 16.75 2.65 C17 .05 19.1 .05 19.7 1.9 Q20.2 3.6 19.6 5.4 Q16.5 4.15 13.8 6.2Z"/></svg><span class="fs-2 fw-bold">RelayRoster</span></span>
+    </div>
+    <div class="card card-md">
+      <div class="card-body">
+        <h2 class="h2 text-center mb-4">Sign in to your account</h2>
+        <div id="ssoMsg" class="text-red small mb-3" role="alert" aria-live="polite" hidden></div>
+        <!--SSO-->
+      </div>
+    </div>
+    <div class="text-center text-secondary small mt-3">You stay signed in on this device for 30 days.</div>
+  </div>
+</div>
+<script>
+"use strict";
+// OIDC: pass the UI hash (#devices …) as next, show errors from the return
+const sso = document.getElementById("ssoBtn");
+if (sso && location.hash) sso.href = "auth/login?" + new URLSearchParams({ next: location.hash });
+const ssoError = new URLSearchParams(location.search).get("error");
+if (ssoError) {
+  const box = document.getElementById("ssoMsg");
+  box.textContent = ssoError;
+  box.hidden = false;
+  history.replaceState(null, "", location.pathname + location.hash);
+}
+</script>
+</body>
+</html>

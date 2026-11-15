@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.ruff_cache/
+.env
+/data/
+# Tabler CSS, fetched by tools/fetch_vendor.py (684 KB, not in the repository)
+app/static/vendor/
+secrets/
