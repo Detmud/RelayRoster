@@ -13,7 +13,7 @@ async function showAudit() {
   const sel = (id, opts, cur, all) => `<select class="form-select form-select-sm rr-select" id="${id}">
     <option value="">${all}</option>${opts.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
   const val = (a, v) => { if (a.action !== "config") return esc(v || ""); try { return esc(fmtVal(JSON.parse(v))); } catch { return esc(v || ""); } };
-  const rows = body.entries.map((a) => `<tr><td class="text-nowrap">${esc(fmtTime(a.at))}</td>
+  const rows = body.entries.map((a) => `<tr><td class="text-nowrap">${timeLongHtml(a.at)}</td>
       <td>${a.device_id ? devLink(a.device_id, a.device_name || a.device_id) : `<span class="text-secondary">All devices</span>`}</td>
       <td>${esc(AUDIT_WHAT[a.action] || a.action)}</td>
       <td>${a.old || a.new ? `${val(a, a.old) || "–"}<span class="rr-arrow">→</span>${val(a, a.new)}` : `<span class="text-secondary">–</span>`}</td>
