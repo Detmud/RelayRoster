@@ -99,6 +99,8 @@ overrides: {}
 # network:
 #   subnet: 192.168.50.0/24
 #   dhcp_pool: 192.168.1.0/24
+#   gateway: 192.168.50.1          # gateway and nameserver: only used when RelayRoster sets a static
+#   nameserver: 192.168.50.1       # address on a device that is on DHCP (Apply address plan)
 #   blocks:
 #     - {name: Shelly 1, match: {kind: "1"}, range: 192.168.50.10-19}
 #     - {name: Shelly i4, match: {kind: i4}, range: 192.168.50.30-39}

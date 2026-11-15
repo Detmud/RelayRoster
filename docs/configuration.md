@@ -17,6 +17,7 @@ Only via the environment: `OIDC_*` (so a typo cannot lock you out), `DATA_DIR` a
 | `SHELLY_PASSWORD` | empty | Device password (digest auth, user `admin`) |
 | `ALLOW_FIRMWARE_UPDATE` | `false` | Allow firmware updates |
 | `ALLOW_REBOOT` | `false` | Allow restarting devices |
+| `ALLOW_ADDRESS` | `false` | Allow setting a static IP address from the address plan |
 | `ALLOW_SET_PASSWORD` | `false` | Allow setting the device password on devices without one |
 | `ALLOW_CONFIG` | `false` | Allow editing device configuration |
 | `SIDEBAR_FOLDED` | `false` | Sidebar as an icon bar that expands on hover |

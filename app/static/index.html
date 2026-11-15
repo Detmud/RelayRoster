@@ -21,6 +21,7 @@
   <script src="static/js/profiles.js" defer></script>
   <script src="static/js/bulk.js" defer></script>
   <script src="static/js/audit.js" defer></script>
+  <script src="static/js/address.js" defer></script>
   <script src="static/js/settings.js" defer></script>
   <script src="static/js/main.js" defer></script>
 </head>
@@ -145,6 +146,7 @@
         <div id="scanWarn" class="alert alert-warning d-none" role="alert"></div>
         <div id="fwJobBar" class="alert alert-info d-none" role="status" aria-live="polite"></div>
         <div id="applyJobBar" class="alert alert-info d-none" role="status" aria-live="polite"></div>
+        <div id="addrJobBar" class="alert alert-info d-none" role="status" aria-live="polite"></div>
 
         <div id="runCard" class="card mb-3 d-none" aria-live="polite">
           <div class="card-body">
@@ -357,6 +359,7 @@
           <div id="planBar" class="alert alert-info d-none" role="status"></div>
           <div id="staleBar" class="alert alert-warning d-none" role="status"></div>
           <div id="kindBar" class="alert alert-info d-none" role="status"></div>
+          <div id="addrBar" class="alert alert-info d-none" role="status"></div>
           <div id="driftList"></div>
           <div id="driftEmpty" class="card d-none"><div class="empty">
             <p class="empty-title">No findings</p>
@@ -465,6 +468,24 @@
       <button class="btn btn-outline-danger d-none" type="button" id="fwCancel">Stop after current device</button>
       <button class="btn" data-close type="button" id="fwClose">Cancel</button>
       <button class="btn btn-primary" type="button" id="fwStart">Update</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="addrDlg" class="rr-dialog rr-dialog-wide">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="card-title">Apply address plan</h3>
+        <div class="text-secondary small">Sets a static IP address on each selected device, one after another.</div>
+      </div>
+    </div>
+    <div class="card-body rr-dialog-body" id="addrBody"></div>
+    <div class="card-footer d-flex gap-2 justify-content-end flex-wrap">
+      <span id="addrSummary" class="me-auto text-secondary small align-self-center"></span>
+      <button class="btn btn-outline-danger d-none" type="button" id="addrStop">Stop after current device</button>
+      <button class="btn" data-close type="button" id="addrClose">Cancel</button>
+      <button class="btn btn-primary" type="button" id="addrStart">Move</button>
     </div>
   </div>
 </dialog>

@@ -28,6 +28,9 @@ class FakeShelly:
                  kvs_dict_format: bool = False, password: str | None = None,
                  schedules: list[dict[str, Any]] | None = None, webhooks: list[dict[str, Any]] | None = None):
         self.id = dev_id
+        self.host = "x"            # set by Fleet: the address the device is reached at
+        self.fleet: Fleet | None = None
+        self.address_lost = False  # takes a static address but never shows up there
         self.app = app
         self.model = model
         self.ver = ver
@@ -88,7 +91,7 @@ class FakeShelly:
         self.uptime += 1      # keeps running like on a real device
         out: dict[str, Any] = {
             "sys": {"uptime": self.uptime, "restart_required": False, "available_updates": upd},
-            "wifi": {"sta_ip": "x", "status": "got ip", "ssid": "IoT", "rssi": -61},
+            "wifi": {"sta_ip": self.host, "status": "got ip", "ssid": "IoT", "rssi": -61},
         }
         for comp, cfg in self.config.items():
             if comp.startswith("cover:"):   # stehender, kalibrierter Rollladen
@@ -189,6 +192,11 @@ class FakeShelly:
                     dst[k] = v
         merge(self.config[comp], params["config"], comp)
         self.config.setdefault("sys", {})["cfg_rev"] = self.config["sys"].get("cfg_rev", 0) + 1
+        # Static address: the device moves at once, the answer to the call never arrives
+        sta = params["config"].get("sta") if kind == "wifi" else None
+        if isinstance(sta, dict) and sta.get("ipv4mode") == "static" and sta.get("ip") and self.fleet:
+            self.fleet.move(self, None if self.address_lost else sta["ip"])
+            raise ConnectionResetError("address changed")
         # Like the real firmware: MQTT and swapping the directions need a restart
         restart = kind == "mqtt" or "invert_directions" in params["config"]
         return {"restart_required": restart}
@@ -219,6 +227,15 @@ class FakeShelly:
 class Fleet:
     def __init__(self, devices: dict[str, FakeShelly]):
         self.devices = devices  # host -> FakeShelly
+        for host, dev in devices.items():
+            dev.host, dev.fleet = host, self
+
+    def move(self, dev: FakeShelly, host: str | None) -> None:
+        """The device answers at another address from now on; None: it is gone."""
+        self.devices.pop(dev.host, None)
+        if host:
+            self.devices[host] = dev
+            dev.host = host
 
     def transport(self) -> httpx.MockTransport:
         def handler(request: httpx.Request) -> httpx.Response:

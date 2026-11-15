@@ -155,6 +155,11 @@ document.addEventListener("DOMContentLoaded", () => {
       else if (peerFixTargets(r).length) usePeerMajority(r, peerFixTargets(r));
       return;
     }
+    const addrOpen = ev.target.closest("[data-addr-open]");
+    if (addrOpen) {
+      if (addrWasRunning) openAddrJob(); else openAddrDialog(addrOpen.dataset.addrOpen);
+      return;
+    }
     const fix = ev.target.closest("[data-fix]");
     if (fix) {
       const ids = fixGroups().get(fix.dataset.fix) || [];
@@ -198,6 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sel && sel.value) assignDevice(sel.value, true).catch((e) => showError(e.message));
   });
   $("#fwCancel").addEventListener("click", cancelFwJob);
+  $$("#addrDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#addrDlg").close()));
+  $("#addrStart").addEventListener("click", startAddrJob);
+  $("#addrStop").addEventListener("click", stopAddrJob);
   $("#polCheck").addEventListener("click", () => checkPolicy().catch((e) => showError(e.message)));
   $("#polSave").addEventListener("click", () => savePolicy().catch((e) => showError(e.message)));
   $("#setSave").addEventListener("click", () => saveSettings().catch((e) => showError(e.message)));

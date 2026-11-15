@@ -212,7 +212,8 @@ function findingRows(fs, withNote, groups = null) {
     <td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td>
     <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)}${sameWord(f.source, KIND_LABEL[f.kind] || f.kind) ? "" : ` <span class="text-secondary small">${esc(f.source)}</span>`}</td>
     ${groups ? `<td class="text-end text-nowrap">${ids ? `<button class="btn btn-sm" type="button" data-fix="${esc(fixKey(f))}"
-      title="Write ${esc(fmtVal(f.target))} to ${esc(f.path)} on every device with this finding">${ids.length > 1 ? `Fix on all (${ids.length})` : "Fix"}</button>` : ""}</td>` : ""}
+      title="Write ${esc(fmtVal(f.target))} to ${esc(f.path)} on every device with this finding">${ids.length > 1 ? `Fix on all (${ids.length})` : "Fix"}</button>` : ""}${f.kind === "network" && f.target
+      ? `<button class="btn btn-sm" type="button" data-addr-open="${esc(f.device_id)}" title="Give this device the next free address of its block">Move…</button>` : ""}</td>` : ""}
   </tr>`;
   }).join("");
 }
@@ -273,6 +274,7 @@ function renderDrift() {
   renderPlanBar();
   renderStaleBar();
   renderKindBar();
+  renderAddrBar();
   const groups = fixGroups();
   const list = data.findings.filter((f) => !driftKind || f.kind === driftKind);
   show($("#driftEmpty"), list.length === 0);

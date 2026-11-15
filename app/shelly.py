@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import ipaddress
 import logging
 import re
 from dataclasses import dataclass
@@ -125,6 +126,41 @@ def is_reboot_call(method: str, params: Any) -> bool:
     return method == "Shelly.Reboot" and params in (None, {})
 
 
+_ADDRESS_KEYS = {"ipv4mode", "ip", "netmask", "gw", "nameserver"}
+
+
+def _is_ipv4(value: Any) -> bool:
+    try:
+        ipaddress.IPv4Address(value)
+    except ValueError:
+        return False
+    return isinstance(value, str)
+
+
+def is_address_call(method: str, params: Any) -> bool:
+    """Static address only: WiFi.SetConfig {"config": {"sta": S}} or Eth.SetConfig {"config": S}, where S is
+    exactly {"ipv4mode": "static", "ip", "netmask", "gw", "nameserver"} with IPv4 addresses (nameserver may be
+    null). No SSID, no password, no other key."""
+    if not isinstance(params, dict) or set(params) != {"config"} or not isinstance(params["config"], dict):
+        return False
+    cfg = params["config"]
+    if method == "WiFi.SetConfig":
+        if set(cfg) != {"sta"}:
+            return False
+        cfg = cfg["sta"]
+    elif method != "Eth.SetConfig":
+        return False
+    if not isinstance(cfg, dict) or set(cfg) != _ADDRESS_KEYS or cfg["ipv4mode"] != "static":
+        return False
+    if not all(_is_ipv4(cfg[k]) for k in ("ip", "netmask", "gw")):
+        return False
+    try:
+        ipaddress.IPv4Network(f"{cfg['gw']}/{cfg['netmask']}", strict=False)
+    except ValueError:
+        return False
+    return cfg["nameserver"] is None or _is_ipv4(cfg["nameserver"])
+
+
 @dataclass
 class Device:
     host: str
@@ -185,6 +221,16 @@ class ShellyClient:
             raise WriteBlocked("Shelly.SetAuth is only allowed to set a password")
         return await self._send("Shelly.SetAuth", params)
 
+    async def set_static_ip(self, iface: str, ip: str, netmask: str, gw: str, nameserver: str | None) -> Any:
+        """Gives the device a static address on its Wi-Fi client (`wifi`) or Ethernet (`eth`) interface.
+        The device changes its address right away, so the answer may never arrive."""
+        sta = {"ipv4mode": "static", "ip": ip, "netmask": netmask, "gw": gw, "nameserver": nameserver}
+        method, params = (("Eth.SetConfig", {"config": sta}) if iface == "eth"
+                          else ("WiFi.SetConfig", {"config": {"sta": sta}}))
+        if not is_address_call(method, params):
+            raise WriteBlocked(f"{method} is only allowed to set a static address")
+        return await self._send(method, params)
+
     async def set_config(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         """Writes settings of a component. Only fields from app/writable.py, otherwise WriteBlocked."""
         if not is_config_call(method, params):
@@ -195,7 +241,7 @@ class ShellyClient:
         # Only reachable via call() (allow list) or the methods with a checked form
         if not (is_read_only(method) or is_rename_call(method, params) or is_firmware_call(method, params)
                 or is_reboot_call(method, params) or is_config_call(method, params)
-                or is_auth_call(method, params)):
+                or is_auth_call(method, params) or is_address_call(method, params)):
             raise WriteBlocked(f"{method} is blocked")
         self._id += 1
         body: dict[str, Any] = {"id": self._id, "method": method}
