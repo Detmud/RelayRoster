@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Back to Tabler's neutral greys for the page background, cards, borders and text, and to Tabler's plain active
+  navigation; the navy tint and the marker bar from 1.0.2 are gone. Navy stays for buttons and links
+
 ## [1.0.2] - 2026-11-15
 
 - Device types show the function first: "Shelly 2PM" with "Gen4" or "Gen2 · Pro" below instead of "Shelly 2PM Gen4"

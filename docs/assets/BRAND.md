@@ -25,41 +25,27 @@ All SVGs have a viewBox with no fixed root width or height, embedded images, tex
 
 ## User interface
 
-The web UI maps the palette below onto Tabler's theme variables in `app/static/style.css`, separately for light and
-dark mode. Navy is for actions, cool berry red for danger. Vermilion `#F34A3E` (`--rr-accent`) stays inside the logo:
-it is not used for text (3.6:1 on white) or for buttons, where it would read as danger. Tabler's colour names map
-onto the semantic colours (green → success, yellow and orange → warning, red → danger, blue → info; azure and purple
-→ navy tint for classification badges such as profiles), so existing classes like `bg-green-lt` follow the palette.
+The web UI is Tabler with as few overrides as possible, set in `app/static/style.css` separately for light and dark
+mode. Neutrals (page canvas, cards, inputs, borders, body and muted text), the focus ring and the active navigation
+are Tabler's defaults. Only the brand colours below replace Tabler's: navy for actions and links, cool berry red for
+danger. Vermilion `#F34A3E` (`--rr-accent`) stays inside the logo: it is not used for text (3.6:1 on white) or for
+buttons, where it would read as danger. Tabler's colour names map onto the semantic colours (green → success, yellow
+and orange → warning, red → danger, blue → info; azure and purple → navy for classification badges such as
+profiles), so existing classes like `bg-green-lt` follow the palette.
 
-### Neutral ramp (slight navy tint)
+### Navy
 
-| Token | Light | Dark | Use |
-| --- | --- | --- | --- |
-| N50 | `#F4F7FB` | `#0F1723` | Light: cards and inputs; dark: page canvas |
-| N100 | `#EBF0F6` | `#172334` | Light: page canvas, table headers; dark: cards and inputs |
-| N200 | `#DCE5EF` | `#213046` | Hover backgrounds, neutral badge background |
-| N300 | `#BBC9DA` | `#32455F` | Card and table borders, strong neutral fills (text N900) |
-| N400 | `#667A94` | `#6F829C` | Input borders, essential separators, functional icons |
-| N500 | `#52647D` | `#9AAEC7` | Muted text (`text-secondary`), placeholders, metadata |
-| N600 | `#40516A` | `#B6C5D8` | Secondary text and supporting labels |
-| N700 | `#2D3D54` | `#D1DCEA` | Body text and table values |
-| N800 | `#1D2B40` | `#E4ECF5` | Table headings and prominent labels |
-| N900 | `#101B2B` | `#F4F7FB` | Headings and strongest emphasis |
+| Use | Light | Dark |
+| --- | --- | --- |
+| Primary button, `text-primary` | `#142D4E` (midnight navy) | `#83A9D7` |
+| Primary button hover | `#0D1E35` | `#9EBDE3` |
+| Links | `#2A5F9E` | `#9EBDE3` |
+| Link hover | `#214A7A` | `#D2E1F3` |
+| Navy badge (`bg-azure-lt`, `bg-purple-lt`) | `#214A7A` on `#EEF3FA` | `#B8CFEA` on `#11243C` |
+| `bg-primary-lt` (changed rows, selected tiles) | `#EEF3FA` | `#11243C` |
 
-### Navy ramp
-
-| Token | Light | Dark | Use |
-| --- | --- | --- | --- |
-| P50 | `#EEF3FA` | `#11243C` | Active navigation, navy badge background |
-| P100 | `#DEE8F5` | `#172F4D` | Hover inside active navigation |
-| P200 | `#BED0E9` | `#213F63` | Selected-row fill |
-| P300 | `#95B3D8` | `#31567F` | Strong decorative fills |
-| P400 | `#527AAD` | `#668FBD` | Focus outline (2 px, 2 px gap), functional icons |
-| P500 | `#3B6599` | `#83A9D7` | Dark: primary button |
-| P600 | `#2A5F9E` | `#9EBDE3` | Links; dark: primary button hover, active navigation text |
-| P700 | `#214A7A` | `#B8CFEA` | Light: link hover; navy badge text |
-| P800 | `#142D4E` | `#D2E1F3` | Light: primary button and active navigation text (midnight navy); dark: link hover |
-| P900 | `#0D1E35` | `#E9F0FA` | Light: primary button hover |
+Tabler derives the active navigation, hover and focus tints from the primary colour, so they follow navy without
+further overrides.
 
 ### Semantic colours
 
@@ -78,13 +64,10 @@ Danger's cool pink undertone keeps it apart from the warm vermilion of the logo.
 
 | Component | Pairing |
 | --- | --- |
-| Text | N500–N900 on N50, N100, N200 or P50 |
 | Solid buttons and badges | Label `#F4F7FB` in light mode, `#0F1723` in dark mode |
-| Tinted badges | Semantic solid on its own badge background |
-| Active navigation | P50 background, P800 (light) or P600 (dark) text, 3 px primary marker |
-| Focus | P400 outline, 2 px, 2 px gap |
-| Inputs and essential boundaries | N400 |
+| Tinted badges | Semantic or navy solid on its own badge background |
+| Everything else | Tabler defaults |
 
-Measured in the rendered UI, the lowest contrast is 4.74:1 for text and badges in light mode and 5.87:1 in dark mode;
-essential boundaries and the focus outline reach at least 3.39:1. Inline links in alerts and help text are underlined,
-and every status badge carries a label, so meaning does not depend on colour alone.
+Every solid-on-badge pair and every solid on Tabler's white or dark card surface measures at least 4.5:1. Inline links
+in alerts and help text are underlined, and every status badge carries a label, so meaning does not depend on colour
+alone.
