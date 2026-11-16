@@ -8,6 +8,16 @@ All notable changes to this project are documented here. The format follows
 - Device list: search, type and status stay in the filter bar; the filters for address, findings, firmware,
   password and radio stack open with "Filters", which shows how many of them are set. The button to change a
   setting on the devices shown is called "Bulk change", like the page it opens, and carries its icon
+- Dashboard: "Device types" shows the type as in the device list, the function first and generation and form
+  factor in the line below, instead of one long name that wrapped
+- Dashboard: the tile "Peer differences" says "All consistent" at 0, in line with the other tiles
+- Device overview: the policy profiles of a device are a card of their own (one row per profile, with where it
+  applies from, "Remove" and "Add to profile") instead of chips and a select inside the device data. The four
+  cards are of similar length; the empty "Profile" field is gone and is called "Device mode" where a device has one
+- Policy editor shows line numbers and the position of the cursor. A YAML error names its line first, marks it
+  beside the text and jumps there with a click; long lines scroll sideways instead of wrapping
+- The hint "rule could match by function" no longer appears for a rule that picks only some devices of a kind
+  (for example a list of IDs for one purpose): `kind` would match the others too
 
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every

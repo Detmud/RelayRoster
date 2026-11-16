@@ -415,7 +415,11 @@
           <div class="card">
             <div class="card-body">
               <div id="polMsg" class="alert d-none" role="alert"></div>
-              <textarea id="polText" class="form-control font-monospace rr-code" spellcheck="false" autocomplete="off"></textarea>
+              <div class="rr-editor">
+                <div class="rr-editor-lines font-monospace" aria-hidden="true"><div id="polLines"></div></div>
+                <textarea id="polText" class="form-control font-monospace rr-code" wrap="off" spellcheck="false" autocomplete="off" aria-label="Policy (YAML)"></textarea>
+              </div>
+              <div id="polPos" class="text-secondary small mt-1"></div>
             </div>
           </div>
         </div>
