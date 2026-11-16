@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- The hint "rule could match by function" no longer appears for a rule that picks only some devices of a kind
+  (for example a list of IDs for one purpose): `kind` would match the others too
+
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
