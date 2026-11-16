@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Navigation grouped by what a page is for: Dashboard and Devices on top, then Checks (Findings, Peer comparison,
+  Firmware), Target state (Profiles, Policy), Tools (Bulk change, Backups) and System (Activity, Settings)
 - Device list: search, type and status stay in the filter bar; the filters for address, findings, firmware,
   password and radio stack open with "Filters", which shows how many of them are set. The button to change a
   setting on the devices shown is called "Bulk change", like the page it opens, and carries its icon

@@ -6,17 +6,17 @@
 // so existing links (#drift, #devices?sort=…) keep working.
 const PAGES = {
   dashboard: { pre: "Overview", title: "Dashboard", sub: "State of all devices at a glance. Every tile opens the matching view." },
-  devices: { pre: "Roster", title: "Devices", sub: "All Shellies found on the network. A click on a row opens the device page; Ctrl/Cmd-click on the name opens it in a new tab." },
-  device: { pre: "Roster / Devices", title: "Device", sub: "" },   // content comes from renderDeviceHeader
-  drift: { pre: "Roster", title: "Findings", sub: "Deviations from the policy. The source shows which rule applies: baseline, a type profile, a device override or the address plan." },
-  peers: { pre: "Roster", title: "Peer comparison", sub: "Device types whose devices differ from each other, without any policy. Highlighted values differ from the majority. Settings without effect (e.g. <code>cloud.server</code> with cloud off) do not count, see <code>peer_depends</code>. Device-specific paths are listed under <code>peer_ignore</code>; paths in <code>ignore</code> of a profile or override do not count for its devices." },
-  firmware: { pre: "Roster", title: "Firmware", sub: "Installed version per device, grouped by type. \"Stable available\" is reported by the device itself." },
-  backups: { pre: "Roster", title: "Backups", sub: "RelayRoster stores a snapshot on every change: configuration, scripts with code, schedules, webhooks and KVS. A firmware update alone does not count as a change." },
-  profiles: { pre: "Configuration", title: "Profiles", sync: false, sub: "Target values per function, e.g. all roller shutters, stored in <code>/data/policy.yaml</code> with comments kept. Nothing here is written to a device." },
-  activity: { pre: "Roster", title: "Activity", sync: false, sub: "Everything RelayRoster wrote: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
-  bulk: { pre: "Roster", title: "Bulk change", sub: "Set one setting on many devices at once, e.g. the NTP server for all devices. Preview first; devices without the setting are left alone." },
-  policy: { pre: "Configuration", title: "Policy", sync: false, sub: "The target state for all devices, stored in <code>/data/policy.yaml</code>. Changes here only affect the comparison, never a device." },
-  settings: { pre: "Configuration", title: "Settings", sync: false, sub: "Stored in <code>/data</code> and applied immediately, no restart. Environment variables only provide the defaults." },
+  devices: { pre: "Overview", title: "Devices", sub: "All Shellies found on the network. A click on a row opens the device page; Ctrl/Cmd-click on the name opens it in a new tab." },
+  device: { pre: "Devices", title: "Device", sub: "" },   // content comes from renderDeviceHeader
+  drift: { pre: "Checks", title: "Findings", sub: "Deviations from the policy. The source shows which rule applies: baseline, a type profile, a device override or the address plan." },
+  peers: { pre: "Checks", title: "Peer comparison", sub: "Device types whose devices differ from each other, without any policy. Highlighted values differ from the majority. Settings without effect (e.g. <code>cloud.server</code> with cloud off) do not count, see <code>peer_depends</code>. Device-specific paths are listed under <code>peer_ignore</code>; paths in <code>ignore</code> of a profile or override do not count for its devices." },
+  firmware: { pre: "Checks", title: "Firmware", sub: "Installed version per device, grouped by type. \"Stable available\" is reported by the device itself." },
+  backups: { pre: "Tools", title: "Backups", sub: "RelayRoster stores a snapshot on every change: configuration, scripts with code, schedules, webhooks and KVS. A firmware update alone does not count as a change." },
+  profiles: { pre: "Target state", title: "Profiles", sync: false, sub: "Target values per function, e.g. all roller shutters, stored in <code>/data/policy.yaml</code> with comments kept. Nothing here is written to a device." },
+  activity: { pre: "System", title: "Activity", sync: false, sub: "Everything RelayRoster wrote: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
+  bulk: { pre: "Tools", title: "Bulk change", sub: "Set one setting on many devices at once, e.g. the NTP server for all devices. Preview first; devices without the setting are left alone." },
+  policy: { pre: "Target state", title: "Policy", sync: false, sub: "The target state for all devices, stored in <code>/data/policy.yaml</code>. Changes here only affect the comparison, never a device." },
+  settings: { pre: "System", title: "Settings", sync: false, sub: "Stored in <code>/data</code> and applied immediately, no restart. Environment variables only provide the defaults." },
 };
 let currentPage = null;
 
