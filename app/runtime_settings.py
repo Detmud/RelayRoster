@@ -41,6 +41,9 @@ FIELDS: tuple[Field, ...] = (
     Field("allow_firmware_update", "ALLOW_FIRMWARE_UPDATE", "bool", "Allow firmware updates",
           "Lets RelayRoster start firmware updates (stable or beta channel). Devices restart during the update.",
           "Devices"),
+    Field("firmware_parallel", "FIRMWARE_PARALLEL", "int", "Parallel firmware updates",
+          "Devices updated at the same time in one job. Every device is unavailable for about a minute while it "
+          "restarts; 1 updates one device after the other.", "Devices", 1, 16),
     Field("allow_reboot", "ALLOW_REBOOT", "bool", "Allow restarting devices",
           "Lets RelayRoster restart a device from its detail view (Shelly.Reboot).", "Devices"),
     Field("allow_set_password", "ALLOW_SET_PASSWORD", "bool", "Allow setting device passwords",

@@ -285,6 +285,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             "allow_address": cfg.allow_address,
             "address_job": _address_summary(),
             "allow_firmware_update": cfg.allow_firmware_update,
+            "firmware_parallel": cfg.firmware_parallel,
             "allow_reboot": cfg.allow_reboot,
             "allow_set_password": cfg.allow_set_password,
             "allow_config": cfg.allow_config,
@@ -313,8 +314,8 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         if not job:
             return None
         v = job.view()
-        return {k: v[k] for k in ("id", "stage", "running", "cancelled", "total", "done", "counts", "current",
-                                  "finished_at")}
+        return {k: v[k] for k in ("id", "stage", "running", "cancelled", "total", "done", "active", "counts",
+                                  "current", "finished_at")}
 
     @app.post("/api/refresh", status_code=202, dependencies=[Depends(auth), Depends(csrf)])
     async def refresh(scan: bool = False) -> dict[str, Any]:

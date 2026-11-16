@@ -357,6 +357,7 @@ async function pollState() {
     $("#sidebar").classList.toggle("navbar-folded-hover", !!st.sidebar_folded);   // takes effect right after Settings
     show($("#signOutItem"), !!st.auth);
     $("#signOutUser").textContent = st.user || "";
+    fwParallel = st.firmware_parallel || 1;
     renderFwJobBar(st.firmware_job);
     renderApplyJobBar(st.apply_job);
     renderAddrJobBar(st.address_job);

@@ -1,14 +1,18 @@
-"""Firmware updates: single or for several devices, always one after the other as a background job.
+"""Firmware updates: single or for several devices as a background job. Several devices are updated at the
+same time, at most `firmware_parallel` (Settings, default 4; 1 = one after the other). The limit keeps the load
+on the Wi-Fi and the vendor's servers low and leaves most of the house usable while devices restart.
 
-Flow per device:
-1. Check identity: this device must answer at the stored address
-2. `Shelly.CheckForUpdate`: get the current target version for the channel. No update available or device
-   already on the target version → do nothing (idempotent)
-3. `Shelly.Update {"stage": …}`. If the connection drops, the device has already started the update
-4. Up to `timeout_s`, `Shelly.GetDeviceInfo` every `poll_s` seconds. Success as soon as `ver` or `fw_id`
-   changed. Then read everything again (new snapshot) and record it in the audit log
+Flow per device, each step is a status the UI shows:
+1. `checking`: identity (this device must answer at the stored address), then `Shelly.CheckForUpdate` for the
+   target version of the channel. No update available or already on the target version → `up_to_date`
+2. `requested`: `Shelly.Update {"stage": …}` sent. If the connection drops, the device has already started
+3. Up to `timeout_s`, `Shelly.GetDeviceInfo` every `poll_s` seconds:
+   `installing` while the device still answers with the old version (it downloads and writes the firmware),
+   `rebooting` while it does not answer
+4. `verifying`: the device is back with a new `ver` or `fw_id`; read everything again (new snapshot)
+5. `done`, recorded in the audit log
 
-Only one job runs at a time. Cancelling prevents further devices from starting, a running update finishes.
+Only one job runs at a time. Cancelling prevents further devices from starting, running updates finish.
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ log = logging.getLogger(__name__)
 # Error codes a device answers with while it is going into the update restart
 _STARTING_CODES = {-109, -32900}
 _job_ids = itertools.count(1)
+PARALLEL_MAX = 16
 
 
 class FirmwareError(RuntimeError):
@@ -56,14 +61,30 @@ class Item:
     old: str | None = None
     target: str | None = None
     new: str | None = None
-    status: str = "queued"     # queued, checking, updating, rebooting, done, up_to_date, failed, skipped
+    # queued, checking, requested, installing, rebooting, verifying, done, up_to_date, failed, skipped
+    status: str = "queued"
     error: str | None = None
     started: float | None = None
     duration_s: int | None = None
+    # Steps passed so far with the seconds since the start of this device: [["checking", 0], ["requested", 2], …]
+    phases: list[list[Any]] = field(default_factory=list)
+
+    def set(self, status: str) -> None:
+        """Enter a step; the time line keeps every step once."""
+        if status == self.status:
+            return
+        self.status = status
+        self.phases.append([status, int(time.monotonic() - self.started) if self.started else 0])
 
     def view(self) -> dict[str, Any]:
-        return {k: getattr(self, k) for k in ("device_id", "name", "host", "old", "target", "new", "status",
-                                              "error", "duration_s")}
+        out = {k: getattr(self, k) for k in ("device_id", "name", "host", "old", "target", "new", "status",
+                                             "error", "duration_s", "phases")}
+        if self.started is not None and self.duration_s is None:
+            out["elapsed_s"] = int(time.monotonic() - self.started)
+        return out
+
+
+ACTIVE = ("checking", "requested", "installing", "rebooting", "verifying")
 
 
 @dataclass
@@ -74,6 +95,7 @@ class Job:
     started_at: str = field(default_factory=now_iso)
     finished_at: str | None = None
     cancelled: bool = False
+    parallel: int = 1
 
     @property
     def running(self) -> bool:
@@ -83,13 +105,14 @@ class Job:
         counts: dict[str, int] = {}
         for it in self.items:
             counts[it.status] = counts.get(it.status, 0) + 1
-        current = next((it for it in self.items if it.status in ("checking", "updating", "rebooting")), None)
+        active = [it for it in self.items if it.status in ACTIVE]
         return {
             "id": self.id, "stage": self.stage, "running": self.running, "cancelled": self.cancelled,
             "started_at": self.started_at, "finished_at": self.finished_at,
-            "total": len(self.items), "counts": counts,
-            "done": sum(1 for it in self.items if it.status not in ("queued", "checking", "updating", "rebooting")),
-            "current": current.view() if current else None,
+            "total": len(self.items), "counts": counts, "parallel": self.parallel,
+            "done": sum(1 for it in self.items if it.status != "queued" and it.status not in ACTIVE),
+            "active": len(active),
+            "current": active[0].view() if active else None,
             "items": [it.view() for it in self.items],
         }
 
@@ -122,7 +145,8 @@ class FirmwareUpdater:
             if not dev:
                 raise KeyError(dev_id)
             items.append(Item(device_id=dev_id, name=dev.get("name"), host=dev["host"], old=dev.get("ver")))
-        self.job = Job(id=next(_job_ids), stage=stage, items=items)
+        parallel = max(1, min(PARALLEL_MAX, int(getattr(self.collector.settings, "firmware_parallel", 1) or 1)))
+        self.job = Job(id=next(_job_ids), stage=stage, items=items, parallel=parallel)
         self._task = asyncio.create_task(self._run(self.job))
         return self.job
 
@@ -145,21 +169,28 @@ class FirmwareUpdater:
                 pass
 
     async def _run(self, job: Job) -> None:
-        try:
-            for item in job.items:
+        slots = asyncio.Semaphore(job.parallel)
+
+        async def one(item: Item) -> None:
+            async with slots:      # devices start in the order of the list, job.parallel at a time
                 if job.cancelled:
                     item.status = "skipped"
                     item.error = "Cancelled before start"
-                    continue
+                    return
                 item.started = time.monotonic()
                 try:
                     await self._update_one(item, job.stage)
                 except FirmwareError as exc:
-                    item.status, item.error = "failed", str(exc)
+                    item.error = str(exc)
+                    item.set("failed")
                 except Exception as exc:  # never leave the job with half-set state
                     log.exception("Firmware update %s: unexpected error", item.device_id)
-                    item.status, item.error = "failed", f"{type(exc).__name__}: {exc}"
+                    item.error = f"{type(exc).__name__}: {exc}"
+                    item.set("failed")
                 item.duration_s = int(time.monotonic() - item.started)
+
+        try:
+            await asyncio.gather(*(one(item) for item in job.items))
         finally:
             job.finished_at = now_iso()
             log.info("Firmware-Job %s fertig: %s", job.id, job.view()["counts"])
@@ -184,7 +215,7 @@ class FirmwareUpdater:
 
         async with col._http() as http:
             client = ShellyClient(http, dev["host"], col.settings.shelly_password, col.settings.rpc_timeout_s)
-            item.status = "checking"
+            item.set("checking")
             try:
                 info = await client.call("Shelly.GetDeviceInfo")
                 if (info or {}).get("id") != item.device_id:
@@ -200,10 +231,10 @@ class FirmwareUpdater:
 
             item.target = ((offers or {}).get(stage) or {}).get("version")
             if not item.target or item.target == item.old:
-                item.status, item.new = "up_to_date", item.old
+                item.new = item.old
+                item.set("up_to_date")
                 return
 
-            item.status = "updating"
             log.info("Firmware-Update %s: %s -> %s (%s)", item.device_id, item.old, item.target, stage)
             try:
                 await client.update_firmware(stage)
@@ -212,8 +243,8 @@ class FirmwareUpdater:
                     raise fail(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
                 log.info("Firmware update %s: connection dropped at the start (%s), device is restarting",
                          item.device_id, type(exc).__name__)
+            item.set("requested")
 
-            item.status = "rebooting"
             deadline = time.monotonic() + self.timeout_s
             new_info: dict[str, Any] | None = None
             while time.monotonic() < deadline:
@@ -221,19 +252,23 @@ class FirmwareUpdater:
                 try:
                     info = await client.call("Shelly.GetDeviceInfo")
                 except (httpx.HTTPError, RpcError):
-                    continue      # still restarting
+                    item.set("rebooting")
+                    continue
                 if (info or {}).get("ver") != item.old or (old_fw and info.get("fw_id") != old_fw):
                     new_info = info
                     break
+                if item.status == "requested":      # still answers with the old version: downloading, writing
+                    item.set("installing")
             if new_info is None:
                 raise fail(f"Device did not report a new firmware within {int(self.timeout_s)} s "
                            f"(still {item.old}). Check the device web UI.")
             item.new = new_info.get("ver")
+            item.set("verifying")
             await col._poll_one(http, dev)
 
         if not store.device(item.device_id):   # device reports a new ID after the update
             item.device_id = store.renamed_to(item.device_id) or item.device_id
-        item.status = "done"
+        item.set("done")
         note = None if item.new == item.target else f"expected {item.target}"
         store.add_audit(item.device_id, "firmware", item.old, item.new, True, note)
         log.info("Firmware-Update %s erfolgreich: %s -> %s", item.device_id, item.old, item.new)

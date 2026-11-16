@@ -482,6 +482,9 @@ def test_firmware_update_job():
         items = {it["device_id"]: it for it in job["items"]}
         a = items["shellyplusi4-b8d61a000101"]
         assert a["status"] == "done" and a["old"] == "1.7.5" and a["new"] == "1.7.6", a
+        # Every device reports the steps it went through; several devices run at the same time
+        assert [p[0] for p in a["phases"]] == ["checking", "requested", "rebooting", "verifying", "done"], a["phases"]
+        assert job["parallel"] == 4 and job["active"] == 0 and st["firmware_parallel"] == 4
         assert items["shellyplusi4-b8d61a000102"]["status"] == "up_to_date", "already on 1.7.6, no update"
         p = items["shellyplus1-441793000301"]
         assert p["status"] == "failed" and "1.7.5" in p["error"], p
@@ -499,18 +502,35 @@ def test_firmware_update_job():
         assert audit[0]["action"] == "firmware" and audit[0]["ok"] and audit[0]["new"] == "1.7.6"
         assert store.audit("shellyplus1-441793000301")[0]["ok"] is False
 
-        # Cancel: the first device finishes, the others do not start
+        # Cancel: the first device finishes, the others do not start (one at a time: firmware_parallel = 1)
+        app.state.collector.settings.firmware_parallel = 1
         plus1.update_fails, plus1.reboot_left = False, 0
         fleet.devices["192.168.10.22"].stable = "1.7.7"
 
         async def go():
             job = fw.start(["shellyplusi4-b8d61a000102", "shellyplus1-441793000301"])
-            await asyncio.sleep(0)
+            while not job.view()["active"]:      # the first device has started
+                await asyncio.sleep(0)
             assert fw.cancel() is True
             await fw.wait()
             return job.view()
         v = asyncio.run(go())
         assert [it["status"] for it in v["items"]] == ["done", "skipped"] and v["cancelled"] is True
+        assert v["parallel"] == 1
+
+        # Several at a time: both devices are in progress together, a cancel lets the running ones finish
+        app.state.collector.settings.firmware_parallel = 4
+        fleet.devices["192.168.10.22"].stable, plus1.stable = "1.7.8", "1.7.8"
+
+        async def together():
+            job = fw.start(["shellyplusi4-b8d61a000102", "shellyplus1-441793000301"])
+            most = 0
+            while job.running:
+                most = max(most, job.view()["active"])
+                await asyncio.sleep(0.001)
+            return most, job.view()
+        most, v = asyncio.run(together())
+        assert most == 2 and [it["status"] for it in v["items"]] == ["done", "done"], (most, v["items"])
 
 
 def test_reboot_disabled_by_default():
