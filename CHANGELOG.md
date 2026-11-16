@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Device overview: the policy profiles of a device are a card of their own (one row per profile, with where it
+  applies from, "Remove" and "Add to profile") instead of chips and a select inside the device data. The four
+  cards are of similar length; the empty "Profile" field is gone and is called "Device mode" where a device has one
 - Policy editor shows line numbers and the position of the cursor. A YAML error names its line first, marks it
   beside the text and jumps there with a click; long lines scroll sideways instead of wrapping
 - The hint "rule could match by function" no longer appears for a rule that picks only some devices of a kind
