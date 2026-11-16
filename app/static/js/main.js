@@ -113,6 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const firstDir = key === "findings" ? "desc" : "asc";
     setView(view.sort === key ? { dir: view.dir === "asc" ? "desc" : "asc" } : { sort: key, dir: firstDir });
   }));
+  $$("#attnTable .table-sort").forEach((b) => b.addEventListener("click", () => {
+    const key = b.dataset.sort;
+    attnSort = attnSort.key === key ? { key, dir: attnSort.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" };
+    render();
+  }));
   const resetFilters = () => setView({ ...VIEW_DEFAULT, sort: view.sort, dir: view.dir });
   $("#devReset").addEventListener("click", resetFilters);
   $("#devReset2").addEventListener("click", resetFilters);
@@ -141,6 +146,20 @@ document.addEventListener("DOMContentLoaded", () => {
       renderPeers();
       return;   // the link itself changes the page
     }
+    const peerBtn = ev.target.closest("[data-peer-major], [data-peer-set]");
+    if (peerBtn) {
+      const g = data.peers.find((x) => peerKey(x) === peerBtn.dataset.peerKey);
+      const r = g?.diffs[+peerBtn.dataset.peerRow];
+      if (!r) return;
+      if ("peerSet" in peerBtn.dataset) bulkFromPeer(r, g);
+      else if (peerFixTargets(r).length) usePeerMajority(r, peerFixTargets(r));
+      return;
+    }
+    const addrOpen = ev.target.closest("[data-addr-open]");
+    if (addrOpen) {
+      if (addrWasRunning) openAddrJob(); else openAddrDialog(addrOpen.dataset.addrOpen);
+      return;
+    }
     const fix = ev.target.closest("[data-fix]");
     if (fix) {
       const ids = fixGroups().get(fix.dataset.fix) || [];
@@ -152,8 +171,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (staleDel) { removeStaleRule(data.stale_rules[+staleDel.dataset.staleDel]).catch((e) => showError(e.message)); return; }
     const unassign = ev.target.closest("[data-unassign]");
     if (unassign) {
-      if (confirm(`Remove this device from profile ${unassign.dataset.unassign}? If its match rule fits, the device is added to the profile's exclude list.`))
-        assignDevice(unassign.dataset.unassign, false).catch((e) => showError(e.message));
+      confirmDialog(`Remove this device from profile ${unassign.dataset.unassign}? If its match rule fits, the device is added to the profile's exclude list.`, "Remove from profile")
+        .then((yes) => yes && assignDevice(unassign.dataset.unassign, false)).catch((e) => showError(e.message));
       return;
     }
     const applyProf = ev.target.closest("[data-apply-prof]");
@@ -169,13 +188,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (row) goDevice(row.dataset.id, row.dataset.section);
   });
   $$("#planDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#planDlg").close()));
-  $("#planDlg").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   $("#planApply").addEventListener("click", applyPlan);
   $$("#fwDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#fwDlg").close()));
-  $("#fwDlg").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   $("#fwStart").addEventListener("click", startFwUpdate);
   $$("#applyDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#applyDlg").close()));
-  $("#applyDlg").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
   $("#applyStart").addEventListener("click", startApply);
   $("#applyStop").addEventListener("click", stopApply);
   $("#devBulk").addEventListener("click", () => {
@@ -187,6 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sel && sel.value) assignDevice(sel.value, true).catch((e) => showError(e.message));
   });
   $("#fwCancel").addEventListener("click", cancelFwJob);
+  $$("#addrDlg [data-close]").forEach((b) => b.addEventListener("click", () => $("#addrDlg").close()));
+  $("#addrStart").addEventListener("click", startAddrJob);
+  $("#addrStop").addEventListener("click", stopAddrJob);
   $("#polCheck").addEventListener("click", () => checkPolicy().catch((e) => showError(e.message)));
   $("#polSave").addEventListener("click", () => savePolicy().catch((e) => showError(e.message)));
   $("#setSave").addEventListener("click", () => saveSettings().catch((e) => showError(e.message)));

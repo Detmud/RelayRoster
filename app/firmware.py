@@ -109,6 +109,9 @@ class FirmwareUpdater:
             raise ValueError(f"Unknown channel '{stage}', allowed: {', '.join(FIRMWARE_STAGES)}")
         if self.job and self.job.running:
             raise RuntimeError("A firmware update is already running")
+        moving = getattr(self.collector, "address", None)
+        if moving and moving.job and moving.job.running:
+            raise RuntimeError("Addresses are being changed, wait until this has finished")
         ids = list(dict.fromkeys(device_ids))   # keep the order, drop duplicates
         if not ids:
             raise ValueError("No devices selected")

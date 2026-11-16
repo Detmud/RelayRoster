@@ -5,6 +5,36 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- **Apply address plan** (new write function, off by default, switch "Allow address changes" / `ALLOW_ADDRESS`):
+  devices outside their address block get the next free address of the block as a static address on the device.
+  Preview with editable address, one device after another, check that the address is free, wait for the device at
+  the new address and compare its ID; no rollback. `network` in the policy accepts `gateway` and `nameserver` for
+  devices that are on DHCP
+
+- Policy: `match` in profiles and address blocks accepts `kind` (what the hardware does: `2PM`, `i4`, `Plug`) and
+  `variant` (`Standard`, `Pro`, `Mini`), so one rule covers all generations and survives firmware updates that
+  rename device IDs. The default policy matches "Button input" by `kind: i4`. Findings shows a hint for rules that
+  still match by a glob on `app` or `id` where `kind` would do; existing policies are not changed
+- Device list: the type filter also offers function, generation and form factor
+
+- Peer comparison: "Use majority" writes the majority value to the differing devices through the usual preview,
+  optionally with a rule in the policy; "Set…" opens Bulk change with the setting and the type filled in. Needs
+  "Allow config changes"
+
+- Findings and the peer comparison show a readable name per setting ("Switch 0 · Auto off", "Password
+  protection") and the note what is wrong; the path follows below in small type. The API adds `label` to findings
+  and peer rows
+
+- Dialogs close in one way: Cancel or Close in the footer (or Esc); no X in the header and no closing by a click
+  next to the dialog. Confirmations are dialogs of the app with a named button instead of the browser's own
+
+- Dashboard: the tile "Firmware updates" is now "Updates" and opens the device list filtered by "Update available"
+
+- Every table can be sorted by a click on a column heading (ascending, descending, back to the default order);
+  pages remember the sort per table
+- Dashboard: "Needs attention" shows the address as first column, links it to the device and can be sorted;
+  "Device types" can be sorted
+
 - Dates, times and numbers follow the browser's locale and time zone, with a four-digit year and without "at";
   log tables (Activity, Backups) show seconds. Every time has the full ISO 8601 time with offset as tooltip
 

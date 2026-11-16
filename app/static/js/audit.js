@@ -2,7 +2,7 @@
 // Part of the UI, loads after app.js; shared global scope, order defined in index.html
 // ---- Activity (the audit log) across all devices --------------------------------------------------------
 
-const AUDIT_WHAT = { rename: "Name", firmware: "Firmware", reboot: "Restart", config: "Setting", auth: "Password",
+const AUDIT_WHAT = { rename: "Name", firmware: "Firmware", reboot: "Restart", config: "Setting", auth: "Password", address: "Address",
   settings: "Settings", policy: "Policy" };
 let auditFilter = { action: "", device_id: "" };
 

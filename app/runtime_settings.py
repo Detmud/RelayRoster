@@ -49,6 +49,9 @@ FIELDS: tuple[Field, ...] = (
     Field("allow_config", "ALLOW_CONFIG", "bool", "Allow config changes",
           "Lets RelayRoster write settings from the Settings tab of a device page (<Component>.SetConfig). "
           "Wi-Fi client, passwords and calibration values stay read-only.", "Devices"),
+    Field("allow_address", "ALLOW_ADDRESS", "bool", "Allow address changes",
+          "Lets RelayRoster give a device a static IP address from the address plan (network in the policy). "
+          "Anything that addresses the device by IP needs the new address afterwards. There is no rollback.", "Devices"),
     Field("scan_networks", "SCAN_NETWORKS", "list", "Networks to scan",
           "IPv4 networks in CIDR notation, one per line. Largest network: /16.", "Discovery"),
     Field("extra_hosts", "EXTRA_HOSTS", "list", "Extra hosts",

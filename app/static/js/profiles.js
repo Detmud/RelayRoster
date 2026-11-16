@@ -36,7 +36,7 @@ async function savePolicy() {
   const { status, body } = await api("api/policy", { method: "PUT", json: { text: $("#polText").value, base_hash: policyHash }, keep: "all" });
   if (status === 409) {
     policyMessage(body.errors);
-    if (confirm(`${body.errors[0]} Load the current version? Your edits in the editor are discarded.`)) await loadPolicy();
+    if (await confirmDialog(`${body.errors[0]} Load the current version? Your edits in the editor are discarded.`, "Load current version", true)) await loadPolicy();
     return;
   }
   if (status >= 400) { policyMessage(body.errors || [body.detail]); return; }
@@ -49,7 +49,7 @@ async function savePolicy() {
 // Manage profiles without YAML. They are still stored in policy.yaml (round trip on the server, comments stay).
 // #profiles = list, #profiles/new = new profile, #profiles/<name> = edit profile.
 
-const MATCH_FIELDS = [["app", "App code"], ["model", "Model"], ["profile", "Device profile"], ["gen", "Generation"], ["name", "Device name"], ["id", "Device ID"]];
+const MATCH_FIELDS = [["kind", "Function"], ["variant", "Form factor"], ["app", "App code"], ["model", "Model"], ["profile", "Device profile"], ["gen", "Generation"], ["name", "Device name"], ["id", "Device ID"]];
 const RULE_OPS = [["=", "="], ["in", "one of"], ["not", "not"], ["min", "≥ min"], ["max", "≤ max"], ["expr", "expression"]];
 let prof = { loaded: false, list: [], choices: {}, templates: [], devices: [], errors: [], edit: null, notice: null };
 let profTimer = null;
@@ -213,7 +213,7 @@ async function moveProfile(i, dir) {
 }
 
 async function deleteProfile(p) {
-  if (!confirm(`Delete profile "${p.name}"? Its rules no longer apply to ${p.devices.length} device(s). policy.yaml is backed up first.`)) return;
+  if (!await confirmDialog(`Delete profile "${p.name}"? Its rules no longer apply to ${p.devices.length} device(s). policy.yaml is backed up first.`, "Delete profile", true)) return;
   try {
     await profWrite(`api/profiles/${encodeURIComponent(p.name)}`, "DELETE");
     prof.notice = { kind: "ok", html: `Profile <b>${esc(p.name)}</b> deleted.` };
@@ -253,7 +253,7 @@ function renderProfileEditor() {
           <div class="mb-3"><label class="form-label required" for="pfName">Name</label>
             <input class="form-control" id="pfName" value="${esc(d.name)}" autocomplete="off"></div>
           <h4 class="mb-1">Match</h4>
-          <p class="text-secondary small mb-2">All filled fields must match. Globs allowed (<code>*I4*</code>), several values separated by commas mean “or”.</p>
+          <p class="text-secondary small mb-2">All filled fields must match. <code>kind</code> is what the hardware does (<code>2PM</code>, <code>i4</code>) and holds across generations. Globs allowed (<code>shellyplus1-*</code>), several values separated by commas mean “or”.</p>
           ${MATCH_FIELDS.map(([k, l]) => `<div class="mb-2 row g-2 align-items-center"><label class="col-4 col-form-label py-0" for="pfm-${k}">${l} <span class="text-secondary small font-monospace">${k}</span></label>
             <div class="col-8"><input class="form-control form-control-sm font-monospace" id="pfm-${k}" data-match="${k}" list="pfc-${k}" value="${esc(d.match[k])}" autocomplete="off">
             <datalist id="pfc-${k}">${choiceOptions(k)}</datalist></div></div>`).join("")}

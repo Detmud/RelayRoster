@@ -13,6 +13,7 @@ import httpx
 
 from . import compare, devicepage, discovery, policy as pol, policy_edit, writable
 from .config import Settings
+from .address import AddressMover
 from .apply import ApplyRunner
 from .firmware import FirmwareUpdater, _starting_update
 from .shelly import RpcError, ShellyClient, WriteBlocked, clean_name, content_hash
@@ -111,6 +112,7 @@ class Collector:
         self.plan = discovery.plan_targets(settings.scan_networks, settings.extra_hosts)
         self.firmware = FirmwareUpdater(self)
         self.apply = ApplyRunner(self)    # apply profile, bulk change
+        self.address = AddressMover(self)   # static address from the address plan
         # Restart: how often and how long RelayRoster asks until the device answers again
         self.reboot_poll_s = 2.0
         self.reboot_timeout_s = 90.0
@@ -587,6 +589,7 @@ class Collector:
     async def stop(self) -> None:
         await self.firmware.stop()
         await self.apply.stop()
+        await self.address.stop()
         if self._task:
             self._task.cancel()
             try:

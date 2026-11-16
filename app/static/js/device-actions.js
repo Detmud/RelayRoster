@@ -121,7 +121,7 @@ const rebootButton = (cls = "") => allowReboot
 async function rebootDevice() {
   const d = devState.body?.device;
   if (!d || !allowReboot) return;
-  if (!confirm(`Restart "${d.name || d.id}" now? Outputs, inputs and scripts on this device stop for a few seconds.`)) return;
+  if (!await confirmDialog(`Restart "${d.name || d.id}" now? Outputs, inputs and scripts on this device stop for a few seconds.`, "Restart device")) return;
   const btns = $$("[data-act=reboot]");
   btns.forEach((b) => { b.disabled = true; });
   const deskBtn = $("#devActions .btn[data-act=reboot]");

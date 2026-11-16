@@ -57,6 +57,8 @@ class Settings:
     allow_set_password: bool = field(default_factory=lambda: _bool("ALLOW_SET_PASSWORD", False))
     # Edit configuration on the device page (<Component>.SetConfig, allow list app/writable.py)
     allow_config: bool = field(default_factory=lambda: _bool("ALLOW_CONFIG", False))
+    # Set a static IP address from the address plan (WiFi.SetConfig / Eth.SetConfig, address fields only). Off by default.
+    allow_address: bool = field(default_factory=lambda: _bool("ALLOW_ADDRESS", False))
     # Sidebar as an icon bar that expands on hover (Tabler "Folded hover"). Off: always expanded
     sidebar_folded: bool = field(default_factory=lambda: _bool("SIDEBAR_FOLDED", False))
 

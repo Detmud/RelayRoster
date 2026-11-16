@@ -22,7 +22,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import apply as applymod, compare, devicepage, policy as pol, policy_edit as pe, profiles_view, report
+from . import address as addressmod, apply as applymod, compare, devicepage, policy as pol, policy_edit as pe, profiles_view, report, writable
 from .auth import COOKIE, FLOW_COOKIE, FLOW_MAX_AGE, MAX_AGE, Auth
 from .collector import Collector, ConfigError, ConfigInvalid, RebootError, RenameError
 from .config import Settings, settings as default_settings
@@ -123,7 +123,13 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         ignore = (policy_data or {}).get("peer_ignore") or []
         devs = store.devices()
         dev_ignore = {d["id"]: pol.device_ignore(policy_data, d) for d in devs} if policy_data else {}
-        return compare.peer_groups(devs, rep["configs"], ignore, peer_depends(policy_data), dev_ignore)
+        groups = compare.peer_groups(devs, rep["configs"], ignore, peer_depends(policy_data), dev_ignore)
+        for g in groups:
+            for r in (*g["diffs"], *g.get("hidden", [])):
+                r["label"] = devicepage.setting_label(r["path"])
+            for r in g["diffs"]:
+                r["editable"] = writable.is_editable(r["path"])
+        return groups
 
     @app.get("/healthz", include_in_schema=False)
     def healthz() -> dict[str, str]:
@@ -275,7 +281,9 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             "auto_scan": cfg.scan_every_n_polls > 0,
             "poll_interval_min": cfg.poll_interval_min,
             "read_only": not (cfg.allow_firmware_update or cfg.allow_reboot or cfg.allow_config
-                              or cfg.allow_set_password),
+                              or cfg.allow_set_password or cfg.allow_address),
+            "allow_address": cfg.allow_address,
+            "address_job": _address_summary(),
             "allow_firmware_update": cfg.allow_firmware_update,
             "allow_reboot": cfg.allow_reboot,
             "allow_set_password": cfg.allow_set_password,
@@ -284,6 +292,13 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             "firmware_job": _job_summary(),
             "apply_job": _apply_summary(),
         }
+
+    def _address_summary() -> dict[str, Any] | None:
+        job = collector.address.job
+        if not job:
+            return None
+        v = job.view()
+        return {k: v[k] for k in ("id", "running", "cancelled", "total", "done", "counts", "current", "finished_at")}
 
     def _apply_summary() -> dict[str, Any] | None:
         job = collector.apply.job
@@ -338,6 +353,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             "policy_errors": policy_errors,
             "names_unknown": rep["names_unknown"],
             "stale_rules": rep["stale_rules"],
+            "kind_hints": pol.kind_hints(policy_data, store.devices()) if policy_data else [],
         }
 
     @app.get("/api/devices/{device_id}", dependencies=[Depends(auth)])
@@ -472,6 +488,64 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
     @app.post("/api/firmware/job/cancel", dependencies=[Depends(auth), Depends(csrf)])
     def firmware_cancel() -> dict[str, Any]:
         return {"cancelled": collector.firmware.cancel()}
+
+    # ---- Address plan: static address ---------------------------------------------------
+
+    def address_allowed() -> None:
+        if not cfg.allow_address:
+            raise HTTPException(403, "Address changes are disabled. Turn on 'Allow address changes' in Settings.")
+
+    @app.get("/api/address/job", dependencies=[Depends(auth)])
+    def address_job() -> dict[str, Any]:
+        job = collector.address.job
+        return {"job": job.view() if job else None, "allow_address": cfg.allow_address}
+
+    @app.post("/api/address/preview", dependencies=[Depends(auth), Depends(csrf)])
+    def address_preview(device_ids: list[str] | None = Body(None, embed=True)) -> dict[str, Any]:
+        """Suggested address per device that is not in its block, with the values the call would use. Reads
+        stored data only; the job checks everything again on the device."""
+        policy_data, policy_errors = load_policy()
+        if not policy_data:
+            return {"devices": [], "errors": policy_errors or ["No policy"], "allow_address": cfg.allow_address}
+        # Same suggestions as the findings of the overview: every device gets its own free address
+        rep = report.build(store, policy_data, cfg.poll_interval_min)
+        targets = {f["device_id"]: f.get("target") for f in rep["findings"] if f["kind"] == "network" and f["path"] == "ip"}
+        rows = []
+        for d in store.devices():
+            blk = pol.address_block(policy_data, d)
+            if d["id"] not in targets or not blk or (device_ids is not None and d["id"] not in device_ids):
+                continue
+            sug = {"target": targets[d["id"]], "block": blk.get("name") or str(blk["range"])}
+            config = ((store.latest_snapshot(d["id"]) or {}).get("data") or {}).get("config")
+            row = {"device_id": d["id"], "name": d.get("name"), "host": d["host"], "target": sug["target"],
+                   "block": sug["block"], "model_name": model_name(d.get("model"), d.get("app"), d.get("gen")),
+                   "error": None if sug["target"] else f"Block '{sug['block']}' is full."}
+            if sug["target"]:
+                try:
+                    row.update(addressmod.plan_call(config, d.get("status"), d["host"],
+                                                    policy_data.get("network"), sug["target"]))
+                except addressmod.AddressError as exc:
+                    row["error"] = str(exc)
+            rows.append(row)
+        return {"devices": rows, "errors": [], "allow_address": cfg.allow_address}
+
+    @app.post("/api/address/apply", status_code=202,
+              dependencies=[Depends(auth), Depends(csrf), Depends(address_allowed)])
+    async def address_apply(items: list[dict[str, Any]] = Body(..., embed=True)) -> dict[str, Any]:
+        """Starts the job: [{device_id, ip}], one device after the other. Status via /api/address/job."""
+        try:
+            job = collector.address.start(items)
+        except KeyError as exc:
+            raise HTTPException(404, f"Unknown device {exc.args[0]}") from None
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        except RuntimeError as exc:
+            raise HTTPException(409, str(exc)) from None
+        return {"job": job.view()}
+
+    @app.post("/api/address/job/cancel", dependencies=[Depends(auth), Depends(csrf)])
+    def address_cancel() -> dict[str, Any]:
+        return {"cancelled": collector.address.cancel()}
 
     # ---- Restart ------------------------------------------------------------------------
 

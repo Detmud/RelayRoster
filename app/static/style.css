@@ -185,7 +185,8 @@
 .rr-devbar .rr-search { flex: 1 1 12rem; }
 .rr-select { width: auto; flex: 0 1 auto; }
 .rr-select.rr-active { border-color: var(--tblr-primary); color: var(--tblr-primary); }
-#devTable th .table-sort { white-space: nowrap; background: transparent; }
+.table th .table-sort { white-space: nowrap; background: transparent; }
+.table th.text-end .table-sort { margin-right: 0; }
 @media (max-width: 767.98px) {
   .rr-devbar .rr-search { flex-basis: 100%; }
   .rr-select { flex: 1 1 calc(50% - .25rem); min-width: 0; }
@@ -219,6 +220,8 @@ dialog.rr-dialog {
   border: 0; padding: 0; background: transparent; color: inherit;
   width: min(980px, 96vw); max-height: 90vh;
 }
+dialog.rr-dialog-confirm { width: min(30rem, 96vw); }
+.rr-addr-input { width: 10.5rem; }
 dialog.rr-dialog::backdrop { background: rgba(10, 12, 16, .5); }
 dialog.rr-dialog > .card { max-height: 90vh; display: flex; flex-direction: column; margin: 0; }
 .rr-dialog-body { overflow: auto; }

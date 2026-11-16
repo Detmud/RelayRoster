@@ -55,7 +55,10 @@ function matches(d) {
   // MAC also findable without colons (1020ba000201), as it appears in the device ID
   if (q && ![d.name, d.id, d.app, d.model, d.model_name, d.host, d.profile, d.mac, (d.mac || "").replace(/:/g, ""), ...(d.profiles || [])]
     .some((x) => String(x ?? "").toLowerCase().includes(q))) return false;
-  if (view.type && typeName(d) !== view.type) return false;
+  if (view.type) {
+    const m = /^(kind|gen|variant):(.*)$/.exec(view.type);
+    if (m ? String(d[m[1]] ?? "") !== m[2] : typeName(d) !== view.type) return false;
+  }
   // "down" like the Unreachable tile on the dashboard: error or stale
   if (view.status === "down" ? !isDown(d) : view.status && statusKey(d) !== view.status) return false;
   if (view.address) {
@@ -127,19 +130,23 @@ function syncViewControls() {
     el.value = view[k];
     el.classList.toggle("rr-active", !!view[k]);
   }
-  $$("#devTable .table-sort").forEach((b) => {
-    const on = b.dataset.sort === view.sort;
-    b.classList.toggle("asc", on && view.dir === "asc");
-    b.classList.toggle("desc", on && view.dir === "desc");
-    b.closest("th").setAttribute("aria-sort", on ? (view.dir === "asc" ? "ascending" : "descending") : "none");
-  });
+  $$("#devTable .table-sort").forEach((b) => sortMark(b.closest("th"), b.dataset.sort === view.sort ? view.dir : ""));
 }
 
 function fillTypeFilter() {
   const sel = $("#fApp");
   const apps = [...new Set(data.devices.map(typeName))].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const counts = Object.fromEntries(apps.map((a) => [a, data.devices.filter((d) => typeName(d) === a).length]));
-  sel.innerHTML = `<option value="">All types</option>${apps.map((a) => `<option value="${esc(a)}">${esc(a)} (${counts[a]})</option>`).join("")}`;
+  // Function (kind), generation and form factor as "kind:2PM", "gen:3", "variant:Mini"; the exact type by its name
+  const group = (label, key, get, text) => {
+    const vals = [...new Set(data.devices.map(get).filter((v) => v != null && v !== ""))].sort((a, b) => natCmp(String(a), String(b)));
+    return vals.length > 1 ? `<optgroup label="${label}">${vals.map((v) => `<option value="${key}:${esc(v)}">${esc(text(v))} (${data.devices.filter((d) => get(d) === v).length})</option>`).join("")}</optgroup>` : "";
+  };
+  sel.innerHTML = `<option value="">All types</option>
+    ${group("Function", "kind", (d) => d.kind, (v) => (v === "unknown" ? "Unknown" : `Shelly ${v}`))}
+    ${group("Generation", "gen", (d) => d.gen, (v) => `Gen${v}`)}
+    ${group("Form factor", "variant", (d) => d.variant, (v) => v)}
+    <optgroup label="Type">${apps.map((a) => `<option value="${esc(a)}">${esc(a)} (${counts[a]})</option>`).join("")}</optgroup>`;
 }
 
 function setView(patch) {
@@ -200,14 +207,26 @@ function findingRows(fs, withNote, groups = null) {
   return fs.map((f) => {
     const ids = groups && f.kind === "mismatch" && f.fixable ? groups.get(fixKey(f)) || [] : null;
     return `<tr>
-    <td class="font-monospace small">${esc(f.path)}${withNote && f.note ? `<span class="rr-sub">${esc(f.note)}</span>` : ""}</td>
+    ${settingCell(f, withNote ? f.note : "")}
     <td>${valHtml(f.expected)}</td>
     <td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td>
     <td>${badge(KIND_BADGE[f.kind], KIND_LABEL[f.kind] || f.kind)}${sameWord(f.source, KIND_LABEL[f.kind] || f.kind) ? "" : ` <span class="text-secondary small">${esc(f.source)}</span>`}</td>
     ${groups ? `<td class="text-end text-nowrap">${ids ? `<button class="btn btn-sm" type="button" data-fix="${esc(fixKey(f))}"
-      title="Write ${esc(fmtVal(f.target))} to ${esc(f.path)} on every device with this finding">${ids.length > 1 ? `Fix on all (${ids.length})` : "Fix"}</button>` : ""}</td>` : ""}
+      title="Write ${esc(fmtVal(f.target))} to ${esc(f.path)} on every device with this finding">${ids.length > 1 ? `Fix on all (${ids.length})` : "Fix"}</button>` : ""}${f.kind === "network" && f.target
+      ? `<button class="btn btn-sm" type="button" data-addr-open="${esc(f.device_id)}" title="Give this device the next free address of its block">Move…</button>` : ""}</td>` : ""}
   </tr>`;
   }).join("");
+}
+
+// Profiles and address blocks that match by a glob on app or id where kind would do. Hint only
+function renderKindBar() {
+  const hints = data.kind_hints || [];
+  const bar = $("#kindBar");
+  show(bar, hints.length > 0);
+  bar.innerHTML = hints.length ? `<strong>${plural(hints.length, "rule")} could match by function.</strong>
+    A glob on the app code or the device ID breaks when a firmware update renames IDs and misses other generations of the same device. Change <code>match</code> in <a href="#policy">Policy</a> if you like; nothing is changed automatically.
+    <ul class="mb-0 mt-2">${hints.map((h) => `<li>${esc(h.what)} <b>${esc(h.name)}</b>: <code>${esc(Object.entries(h.match).map(([k, v]) => `${k}: ${fmtVal(v)}`).join(", "))}</code>
+      matches ${plural(h.devices, "device")}, all of them <code>kind: ${esc(h.kind)}</code></li>`).join("")}</ul>` : "";
 }
 
 // Rules whose path exists on no device, e.g. ble.enable since firmware 2.0
@@ -222,7 +241,7 @@ function renderStaleBar() {
 }
 
 async function removeStaleRule(r) {
-  if (!confirm(`Remove ${r.path} (${r.source}) from policy.yaml? The previous version is kept as a backup.`)) return;
+  if (!await confirmDialog(`Remove ${r.path} (${r.source}) from policy.yaml? The previous version is kept as a backup.`, "Remove rule", true)) return;
   const { status, body } = await api("api/policy/rule/remove", { method: "POST", json: { source: r.source, path: r.path, device_id: r.device_id }, keep: "all" });
   if (status >= 400) { showError((body.errors || [body.detail]).join(" · ")); return; }
   policyLoaded = false;
@@ -254,6 +273,8 @@ function renderPlanBar() {
 function renderDrift() {
   renderPlanBar();
   renderStaleBar();
+  renderKindBar();
+  renderAddrBar();
   const groups = fixGroups();
   const list = data.findings.filter((f) => !driftKind || f.kind === driftKind);
   show($("#driftEmpty"), list.length === 0);
@@ -271,7 +292,7 @@ function renderDrift() {
       </div>
       <div class="table-responsive"><table class="table table-vcenter card-table rr-findings">
         <colgroup><col class="rr-c-path"><col class="rr-c-val"><col class="rr-c-val"><col class="rr-c-src"><col class="rr-c-act"></colgroup>
-        <thead><tr><th>Path</th><th>Expected</th><th>Actual</th><th>Source</th><th></th></tr></thead>
+        <thead><tr><th>Finding</th><th>Expected</th><th>Actual</th><th>Source</th><th></th></tr></thead>
         <tbody>${findingRows(fs, true, groups)}</tbody>
       </table></div></div>`;
   }).join("");
@@ -292,13 +313,28 @@ function peerHiddenBlock(g, cols) {
   const hs = g.hidden || [];
   if (!hs.length) return "";
   const rows = hs.map((r) => `<tr>
-    <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${esc(r.note)}</span></td>
+    ${settingCell(r, r.note)}
     ${g.devices.map((d) => `<td>${valHtml(r.values[d.id])}</td>`).join("")}</tr>`).join("");
   return `<details class="rr-peer-more border-top">
       <summary class="card-body py-2 text-secondary small">${hs.length} difference${hs.length === 1 ? "" : "s"} hidden (setting has no effect or cannot be changed)</summary>
       <div class="table-responsive"><table class="table table-vcenter card-table rr-hidden">
-      <thead><tr><th>Path</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
+      <thead><tr><th>Setting</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
     </details>`;
+}
+
+// Outliers that can take the majority value: devices whose firmware does not know the setting cannot be written
+const peerFixTargets = (r) => r.outliers.filter((id) => r.values[id] !== "__missing__");
+// Buttons per difference: only for settings RelayRoster may write; the preview stays the authority
+function peerFixButtons(g, r, i) {
+  if (!r.editable) return "";
+  const key = `data-peer-key="${esc(peerKey(g))}" data-peer-row="${i}"`;
+  const off = allowConfig ? "" : "Turn on “Allow config changes” in Settings.";
+  const n = peerFixTargets(r).length;
+  const noMajority = r.majority === "__missing__" ? "Most devices do not have this setting." : n ? "" : "The differing devices do not have this setting.";
+  const major = r.has_majority ? `<button class="btn btn-sm" type="button" data-peer-major ${key}${off || noMajority ? " disabled" : ""}
+      title="${esc(off || noMajority || `Write ${fmtVal(r.majority)} to ${plural(n, "device")} that differ`)}">Use majority</button> ` : "";
+  return `${major}<button class="btn btn-sm" type="button" data-peer-set ${key}${off ? " disabled" : ""}
+      title="${esc(off || "Choose another value in Bulk change")}">Set…</button>`;
 }
 
 function peerGroupBody(g) {
@@ -309,15 +345,15 @@ function peerGroupBody(g) {
   const cols = g.devices.map((d) => `<th title="${esc(d.id)}">${devLink(d.id, d.name || d.id)}</th>`).join("");
   const extra = peerHiddenBlock(g, cols);
   if (!n) return `${info}<div class="card-body text-secondary">All compared settings are identical.</div>${extra}`;
-  const rows = g.diffs.map((r) => `<tr>
-    <td class="font-monospace small">${esc(r.path)}<span class="rr-sub">${r.has_majority ? `majority: ${esc(fmtVal(r.majority))}` : "no majority"}</span></td>
+  const rows = g.diffs.map((r, i) => `<tr>
+    ${settingCell(r, r.has_majority ? `Majority: ${fmtVal(r.majority)}` : "No majority")}
     ${g.devices.map((d) => {
       const v = r.values[d.id];
       const cls = [r.outliers.includes(d.id) ? "rr-outlier" : "", v === "__missing__" ? "rr-missing" : ""].join(" ").trim();
       return `<td class="${cls}">${valHtml(v)}</td>`;
-    }).join("")}</tr>`).join("");
+    }).join("")}<td class="text-end text-nowrap">${peerFixButtons(g, r, i)}</td></tr>`).join("");
   return `${info}<div class="table-responsive"><table class="table table-vcenter card-table">
-    <thead><tr><th>Path</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>${extra}`;
+    <thead><tr><th>Setting</th>${cols}<th></th></tr></thead><tbody>${rows}</tbody></table></div>${extra}`;
 }
 
 // Summary below the tabs: uniform types (click shows the comparison) and single devices (click: detail)

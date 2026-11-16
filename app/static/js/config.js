@@ -231,7 +231,7 @@ async function toggleDiff(snapId) {
 async function removeDevice() {
   const d = devState.body?.device;
   if (!d) return;
-  if (!confirm(`Remove "${d.name || d.id}" and all its backups from RelayRoster? The device itself is not changed. If the next scan finds it again, it shows up as new.`)) return;
+  if (!await confirmDialog(`Remove "${d.name || d.id}" and all its backups from RelayRoster? The device itself is not changed. If the next scan finds it again, it shows up as new.`, "Remove device", true)) return;
   try {
     await api(`api/devices/${encodeURIComponent(d.id)}`, { method: "DELETE" });
     devState = { id: null, tab: "overview", body: null, missing: false, hold: 0 };

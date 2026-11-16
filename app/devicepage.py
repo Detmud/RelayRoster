@@ -134,6 +134,8 @@ SCHEMA: dict[str, dict[str, Any]] = {
         "undervoltage_limit": {"label": "Undervoltage limit", "kind": "number", "unit": "V"},
         "current_limit": {"label": "Current limit", "kind": "number", "unit": "A"},
         "autorecover_voltage_errors": {"label": "Recover after voltage error", "kind": "bool"},
+        "power_restore_delay_enable": {"label": "Delay after power restore", "kind": "bool"},
+        "power_restore_delay": {"label": "Power restore delay", "kind": "number"},
     }},
     "input": {"title": "Input", "fields": {
         **_NAME,
@@ -197,6 +199,31 @@ def field_meta(path: str, value: Any) -> dict[str, Any]:
         if k in spec:
             meta[k] = spec[k]
     return meta
+
+
+# Paths of findings that are not device settings
+_SYNTHETIC_LABELS = {
+    "firmware.stable": "Stable firmware update",
+    "firmware.peer": "Firmware behind its type",
+    "auth": "Password protection",
+    "ip": "IP address",
+    "ip.block": "Address block",
+    "sys.device.name": "Device name",
+}
+
+
+def setting_label(path: str) -> str:
+    """Readable name of a path for findings and the peer comparison: "switch:0.auto_off" -> "Switch 0 · Auto off".
+    The path itself stays visible in the UI, because the policy is written in paths."""
+    if path in _SYNTHETIC_LABELS:
+        return _SYNTHETIC_LABELS[path]
+    comp, _, key = path.partition(".")
+    title = component_title(comp)
+    if not key:
+        return title
+    if _comp_type(comp) == "cover" and key == "pos_control":
+        return f"{title} · Calibration"
+    return f"{title} · {field_meta(path, None)['label']}"
 
 
 def use_value(expected: Any) -> Any:
@@ -280,7 +307,7 @@ def peer_view(groups: list[dict[str, Any]], device_id: str) -> dict[str, Any] | 
 
         def row(r: dict[str, Any]) -> dict[str, Any]:
             vals = r["values"]
-            return {"path": r["path"], "value": vals.get(device_id),
+            return {"path": r["path"], "label": setting_label(r["path"]), "value": vals.get(device_id),
                     "others": [{"id": d["id"], "name": d.get("name"), "value": vals.get(d["id"])} for d in others]}
 
         diffs = [{**row(r), "majority": r["majority"], "has_majority": r["has_majority"]}

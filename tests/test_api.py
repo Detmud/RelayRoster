@@ -356,6 +356,91 @@ def test_interval_change_wakes_loop():
             colmod._clock = real
 
 
+ADDRESS_PLAN = ("\nnetwork:\n  subnet: 192.168.200.0/24\n  dhcp_pool: 192.168.10.0/24\n"
+                "  gateway: 192.168.200.1\n  nameserver: 192.168.200.1\n  blocks:\n"
+                "    - {name: i4, match: {kind: i4}, range: 192.168.200.30-39}\n")
+
+
+def test_address_change_disabled_by_default():
+    with tempfile.TemporaryDirectory() as tmp:
+        fleet, _, c = setup(tmp)
+        r = c.post("/api/address/apply", json={"items": [{"device_id": "shellyplusi4-b8d61a000101",
+                                                           "ip": "192.168.200.30"}]}, headers=H)
+        assert r.status_code == 403 and "Settings" in r.json()["detail"]
+        assert c.get("/api/state").json()["allow_address"] is False
+        assert not any(d.config_writes for d in fleet.devices.values())
+
+
+def test_address_change_job():
+    """Static address from the address plan: preview, move, device that does not come back, address in use."""
+    import time as _time
+    from app import address
+    from app.shelly import is_address_call
+    sta = {"ipv4mode": "static", "ip": "10.0.0.5", "netmask": "255.255.255.0", "gw": "10.0.0.1", "nameserver": None}
+    assert is_address_call("WiFi.SetConfig", {"config": {"sta": sta}}) and is_address_call("Eth.SetConfig", {"config": sta})
+    assert not is_address_call("WiFi.SetConfig", {"config": {"sta": {**sta, "ssid": "Other"}}}), "address fields only"
+    assert not is_address_call("WiFi.SetConfig", {"config": {"sta": {**sta, "ipv4mode": "dhcp"}}})
+    assert not is_address_call("WiFi.SetConfig", {"config": {"sta": {**sta, "ip": "10.0.0.999"}}})
+    assert not is_address_call("WiFi.SetConfig", {"config": {"sta1": sta}}) and not is_address_call("Sys.SetConfig", {"config": sta})
+    # A device with a static address keeps its own netmask, gateway and DNS server; on DHCP the policy has to say
+    own = address.plan_call({"wifi": {"sta": {**sta, "ssid": "IoT"}}}, {"wifi": {"sta_ip": "10.0.0.5", "ssid": "IoT"}},
+                            "10.0.0.5", None, "10.0.0.9")
+    assert (own["method"], own["gw"], own["source"]) == ("WiFi.SetConfig", "10.0.0.1", "device")
+    for args, word in ((({}, {"wifi": {"sta_ip": "10.0.0.5"}}, "10.0.0.5", None, "10.0.0.9"), "network.gateway"),
+                       (({}, {"wifi": {"sta_ip": "172.16.0.5"}}, "10.0.0.5", None, "10.0.0.9"), "reports 172.16.0.5"),
+                       (({"wifi": {"sta": sta}}, {"wifi": {"sta_ip": "10.0.0.5"}}, "10.0.0.5", None, "10.9.9.9"), "not in the network")):
+        try:
+            address.plan_call(*args)
+            raise AssertionError(word)
+        except address.AddressError as exc:
+            assert word in str(exc), exc
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fleet, app, _ = setup(tmp, allow_address=True)
+        mover = app.state.collector.address
+        mover.poll_s, mover.timeout_s, mover.probe_s = 0.01, 0.3, 0.2
+        a, b, cdev = "shellyplusi4-b8d61a000101", "shellyplusi4-b8d61a000102", "shellyplusi4-b8d61a000103"
+        fleet.devices["192.168.10.22"].address_lost = True          # takes the address, never shows up there
+        fleet.devices["192.168.200.32"] = fleet.devices["192.168.10.41"]   # something answers at this address
+        with TestClient(app) as c:
+            text = c.get("/api/policy").json()["text"]
+            assert c.put("/api/policy", json={"text": text + ADDRESS_PLAN}, headers=H).status_code == 200
+            pv = {d["device_id"]: d for d in c.post("/api/address/preview", json={}, headers=H).json()["devices"]}
+            assert {d["target"] for d in pv.values()} == {"192.168.200.30", "192.168.200.31", "192.168.200.32"}
+            assert pv[a]["error"] is None and (pv[a]["netmask"], pv[a]["gw"], pv[a]["source"]) == (
+                "255.255.255.0", "192.168.200.1", "policy")
+            items = [{"device_id": a, "ip": "192.168.200.30"}, {"device_id": b, "ip": "192.168.200.31"},
+                     {"device_id": cdev, "ip": "192.168.200.32"}]
+            assert c.post("/api/address/apply", json={"items": items}).status_code == 403, "CSRF"
+            assert c.post("/api/address/apply", json={"items": [{"device_id": "nope", "ip": "192.168.200.30"}]},
+                          headers=H).status_code == 404
+            r = c.post("/api/address/apply", json={"items": [{"device_id": a, "ip": "192.168.10.41"}]}, headers=H)
+            assert r.status_code == 422 and "address of shellyplus1" in r.json()["detail"], "address of a known device"
+            assert c.post("/api/address/apply", json={"items": [{"device_id": a, "ip": "nonsense"}]},
+                          headers=H).status_code == 422
+            assert c.post("/api/address/apply", json={"items": items}, headers=H).status_code == 202
+            for _ in range(500):
+                job = c.get("/api/address/job").json()["job"]
+                if not job["running"]:
+                    break
+                _time.sleep(0.01)
+            rows = {d["id"]: d for d in c.get("/api/overview").json()["devices"]}
+            audit = c.get("/api/audit?action=address").json()["entries"]
+        res = {it["device_id"]: it for it in job["items"]}
+        assert res[a]["status"] == "done" and (res[a]["old"], res[a]["new"]) == ("192.168.10.21", "192.168.200.30"), res[a]
+        moved = fleet.devices["192.168.200.30"]
+        assert moved.id == a and "192.168.10.21" not in fleet.devices
+        assert moved.config_writes[-1] == ("WiFi.SetConfig", {"config": {"sta": {
+            "ipv4mode": "static", "ip": "192.168.200.30", "netmask": "255.255.255.0", "gw": "192.168.200.1",
+            "nameserver": "192.168.200.1"}}})
+        assert rows[a]["host"] == "192.168.200.30" and rows[a]["address"] is None, "stored under the same ID, plan fulfilled"
+        assert res[b]["status"] == "failed" and "192.168.200.31" in res[b]["error"] and "192.168.10.22" in res[b]["error"]
+        assert rows[b]["host"] == "192.168.10.22", "the old address stays until the device is seen at the new one"
+        assert res[cdev]["status"] == "failed" and "in use" in res[cdev]["error"]
+        assert not fleet.devices["192.168.10.23"].config_writes, "nothing written when the address is in use"
+        assert [(e["device_id"], e["ok"]) for e in audit] == [(cdev, False), (b, False), (a, True)]
+
+
 def test_firmware_update_disabled_by_default():
     with tempfile.TemporaryDirectory() as tmp:
         fleet, _, c = setup(tmp)

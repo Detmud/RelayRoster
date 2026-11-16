@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from . import compare, policy as pol
+from . import compare, devicepage, policy as pol
 from .models import format_mac, model_name, type_fields
 from .store import Store
 
@@ -134,6 +134,7 @@ def build(store: Store, policy_data: dict[str, Any] | None, poll_minutes: int) -
     all_findings, stale, not_applicable = classify_missing(devices, configs, all_findings)
     counts: dict[str, int] = {}
     for f in all_findings:
+        f["label"] = devicepage.setting_label(f["path"])
         counts[f["device_id"]] = counts.get(f["device_id"], 0) + 1
     for r in rows:
         r["findings"] = counts.get(r["id"], 0)

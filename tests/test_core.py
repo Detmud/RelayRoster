@@ -981,17 +981,41 @@ def test_device_settings_view():
     assert dp.field_meta("foo:3.bar_baz.qux", [1])["kind"] == "object"
     assert dp.field_meta("foo:3.bar_baz.qux", 1)["label"] == "Bar baz › qux"
     assert dp.settings_view(None) == {"sections": [], "info": []}
+    # Readable names for findings and the peer comparison; synthetic paths have their own names
+    assert dp.setting_label("switch:0.auto_off") == "Switch 0 · Auto off"
+    assert dp.setting_label("firmware.peer") == "Firmware behind its type" and dp.setting_label("auth") == "Password protection"
+    assert dp.setting_label("cover:1.pos_control") == "Cover 1 · Calibration"
+    assert dp.setting_label("foo:2.bar_baz.qux") == "Foo 2 · Bar baz › qux", "unknown fields keep the fallback"
 
     groups = [{"app": "A", "profile": "", "model_name": "M", "devices": [{"id": "a"}, {"id": "b", "name": "B"}, {"id": "c"}],
                "diffs": [{"path": "p", "values": {"a": 1, "b": 2, "c": 2}, "majority": 2, "has_majority": True,
                           "outliers": ["a"]}]}]
     pv = dp.peer_view(groups, "a")
-    assert pv["diffs"] == [{"path": "p", "value": 1, "majority": 2, "has_majority": True,
+    assert pv["diffs"] == [{"path": "p", "label": "P", "value": 1, "majority": 2, "has_majority": True,
                             "others": [{"id": "b", "name": "B", "value": 2}, {"id": "c", "name": None, "value": 2}]}]
     assert "variants" not in pv and pv["size"] == 3
     assert dp.peer_view(groups, "b")["diffs"] == [], "no outlier"
     assert dp.peer_view(groups, "x") is None
     assert dp.outlier_map(pv) == {"p": {"majority": 2, "has_majority": True}}
+
+
+def test_match_kind_and_variant():
+    """match on kind/variant comes from the model table: one rule for all generations, no glob on names."""
+    i4 = {"id": "shellyplusi4-b8d61a000101", "app": "PlusI4", "model": "SNSN-0024X", "gen": 2}
+    mini = {"id": "shelly1minig3-84fce6000401", "app": "Mini1G3", "model": "S3SW-001X8EU", "gen": 3}
+    pro = {"id": "shellypro2pm-0cb815000001", "app": "Pro2PM", "model": "SPSW-202PE16EU", "gen": 2}
+    assert pol.profile_matches({"kind": "i4"}, i4) and pol.profile_matches({"kind": "I4"}, i4), "case does not matter"
+    assert not pol.profile_matches({"kind": "i4"}, mini)
+    assert pol.profile_matches({"kind": "1", "variant": "Mini"}, mini) and not pol.profile_matches({"kind": "1*"}, pro)
+    assert pol.profile_matches({"kind": ["2PM", "i4"], "variant": "pro"}, pro), "list = or"
+    assert pol.profile_matches({"kind": "unknown"}, {"id": "x", "app": "Brandnew", "model": "XX-1"})
+    assert pol.validate({"profiles": [{"name": "A", "match": {"kind": "i4", "variant": "Standard"}, "settings": {}}]}) == []
+    policy = {"profiles": [{"name": "Buttons", "match": {"app": "*I4*"}}, {"name": "ByKind", "match": {"kind": "i4"}},
+                           {"name": "Mixed", "match": {"id": "shelly*"}}],
+              "network": {"blocks": [{"name": "Mini", "match": {"id": "shelly1minig3-*"}, "range": "10.0.0.1-9"}]}}
+    hints = pol.kind_hints(policy, [i4, mini, pro])
+    assert [(h["what"], h["name"], h["kind"], h["devices"]) for h in hints] == [
+        ("Profile", "Buttons", "i4", 1), ("Address block", "Mini", "1", 1)], "only globs whose devices share one kind"
 
 
 def test_models():
