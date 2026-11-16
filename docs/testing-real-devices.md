@@ -57,6 +57,16 @@ factory reset or its access point.
 - [ ] Note whether the device took the address at once or asked for a restart
 - [ ] Switch "Allow address changes" off again
 
+## 8. Firmware updates in parallel
+Needs at least two devices with a stable update available.
+- [ ] Settings: "Allow firmware updates" on, "Parallel firmware updates" at 2
+- [ ] Firmware: update two or more devices of one type
+- [ ] The dialog shows two devices running at the same time; each one walks through check, request, install,
+      restart, verify. Note how long a real device stays in "install" and in "restart"
+- [ ] "Stop remaining devices" while more are waiting: the running ones finish, the others are skipped
+- [ ] All updated devices report the new version, Activity entry per device
+- [ ] Switch "Allow firmware updates" off again
+
 ## Wrap-up
 - [ ] Export Activity as CSV, the entries match the steps
 - [ ] Set the switches in Settings to the state you want to keep
