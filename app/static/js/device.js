@@ -162,11 +162,10 @@ function devOverview(b) {
   const fwUpd = d.updates?.stable;
   const device = infoCard("Device", [
     dgItem("Type", `${esc(d.type_name || d.model_name || d.app)}<span class="rr-sub">${[d.type_sub, d.model, d.app].filter(Boolean).map(esc).join(" · ")}</span>${stackNote(row)}`),
-    dgItem("Profile", d.profile ? esc(d.profile) : `<span class="text-secondary">–</span>`),
-    dgItem("Policy profiles", profileAssignHtml(b)),
-    dgItem("MAC", `<span class="font-monospace">${esc(d.mac || "–")}</span>`),
+    // Operating mode of the device itself (2PM: switch or cover); most devices have none
+    d.profile ? dgItem("Device mode", `<span title="Shelly calls this the device profile">${esc(d.profile)}</span>`) : "",
     dgItem("Device ID", `<span class="font-monospace">${esc(d.id)}</span>`),
-    dgItem("Firmware", `<span class="font-monospace">${esc(d.ver)}</span>${fwUpd ? ` ${badge("info", `→ ${fwUpd}`, "Stable update available")}` : ""}`),
+    dgItem("MAC", `<span class="font-monospace">${esc(d.mac || "–")}</span>`),
     dgItem("RPC methods", b.methods ? `${b.methods.length}<span class="rr-sub" title="${esc(b.methods.join("\n"))}">from Shelly.ListMethods</span>` : `<span class="text-secondary">unknown</span>`),
   ]);
   const network = infoCard("Network", [
@@ -177,6 +176,7 @@ function devOverview(b) {
   ]);
   const status = infoCard("Status", [
     dgItem("Status", statusBadge(d)),
+    dgItem("Firmware", `<span class="font-monospace">${esc(d.ver)}</span>${fwUpd ? ` ${badge("info", `→ ${fwUpd}`, "Stable update available")}` : ""}`),
     dgItem("Uptime", esc(fmtUptime(d.status?.sys?.uptime))),
     dgItem("Last read", timeHtml(d.last_ok)),
     dgItem("Password", d.auth_en ? badge("ok", "set") : badge("bad", "none")),
@@ -191,27 +191,32 @@ function devOverview(b) {
       : `<div class="card-body text-secondary">Matches the policy.</div>`}
     ${b.findings.length ? `<div class="card-footer"><a href="${devHref(d.id, "findings")}">${b.findings.length > fs.length ? `All ${b.findings.length} findings` : "Findings and policy rules"}</a></div>` : ""}</div>`;
   return `<div class="row row-cards">
-      <div class="col-md-6 col-xl-4">${device}</div>
-      <div class="col-md-6 col-xl-4">${network}</div>
-      <div class="col-md-12 col-xl-4">${status}</div>
+      <div class="col-md-6 col-xl-3">${device}</div>
+      <div class="col-md-6 col-xl-3">${network}</div>
+      <div class="col-md-6 col-xl-3">${status}</div>
+      <div class="col-md-6 col-xl-3">${profilesCard(b)}</div>
       ${(b.covers || []).map((c) => `<div class="col-lg-6">${coverCard(c, d)}</div>`).join("")}
       <div class="col-lg-6">${findings}</div>
       <div class="col-lg-6">${peerCard(b.peer, d)}</div>
     </div>`;
 }
 
-// Profiles of a device: where they apply from (match, assigned), assign and remove
-const VIA_TEXT = { match: "by match", assigned: "assigned", excluded: "excluded" };
-function profileAssignHtml(b) {
+// Policy profiles of a device as a card of their own: one row per profile with where it applies from
+// (match rule or assigned) and a remove button; adding to another profile sits in the footer
+const VIA_TEXT = { match: "by match rule", assigned: "assigned", excluded: "excluded" };
+function profilesCard(b) {
   const list = b.profile_assignment || [];
   const on = list.filter((p) => p.via === "match" || p.via === "assigned");
-  const chips = on.map((p) => `<span class="badge bg-azure-lt rr-chip me-1 mb-1" title="${esc(VIA_TEXT[p.via])}">
-      <a class="text-reset text-decoration-none" href="${profHref(p.name)}">${esc(p.name)}</a>${p.via === "assigned" ? ` <span class="small fw-normal">(assigned)</span>` : ""}
-      <button type="button" data-unassign="${esc(p.name)}" aria-label="Remove from ${esc(p.name)}" title="Remove this device from the profile">×</button></span>`).join("");
+  const rows = on.map((p) => `<div class="list-group-item d-flex align-items-center gap-2">
+      <div class="flex-fill"><a href="${profHref(p.name)}">${esc(p.name)}</a><span class="rr-sub">${esc(VIA_TEXT[p.via])}</span></div>
+      <button type="button" class="btn btn-sm btn-ghost-secondary" data-unassign="${esc(p.name)}" title="Remove this device from the profile">Remove</button></div>`).join("");
   const off = list.filter((p) => !on.includes(p));
-  const sel = off.length ? `<select class="form-select form-select-sm mt-1" data-assign aria-label="Assign to profile">
-      <option value="">Assign to profile…</option>${off.map((p) => `<option value="${esc(p.name)}">${esc(p.name)}${p.via === "excluded" ? " (excluded)" : ""}</option>`).join("")}</select>` : "";
-  return `${chips || `<span class="text-secondary">–</span>`}${sel}`;
+  const sel = off.length ? `<div class="card-footer"><select class="form-select" data-assign aria-label="Add to profile">
+      <option value="">Add to profile…</option>${off.map((p) => `<option value="${esc(p.name)}">${esc(p.name)}${p.via === "excluded" ? " (excluded)" : ""}</option>`).join("")}</select></div>` : "";
+  return `<div class="card h-100"><div class="card-header"><h3 class="card-title">Policy profiles</h3>
+      <div class="card-actions">${on.length ? badge("neutral", on.length) : ""}</div></div>
+    ${rows ? `<div class="list-group list-group-flush flex-fill">${rows}</div>`
+      : `<div class="card-body text-secondary">No profile applies. Only the baseline of the policy is checked.</div>`}${sel}</div>`;
 }
 
 async function assignDevice(name, add) {

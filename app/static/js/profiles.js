@@ -6,6 +6,43 @@ let policyLoaded = false;
 
 let policyHash = null;   // version the editor loaded
 
+// ---- Line numbers of the editor --------------------------------------------------------------
+let polLineCount = 0;
+let polErrLines = new Set();     // lines the last validation named
+
+function polLines(force) {
+  const t = $("#polText"), n = t.value.split("\n").length;
+  if (n !== polLineCount || force) {
+    polLineCount = n;
+    const box = $("#polLines");
+    box.parentElement.style.width = `${Math.max(3, String(n).length) + 0.5}ch`;
+    box.innerHTML = Array.from({ length: n }, (_, i) => `<span${polErrLines.has(i + 1) ? ' class="rr-line-err"' : ""}>${i + 1}</span>`).join("");
+  }
+  polScroll();
+}
+
+function polScroll() {
+  $("#polLines").style.transform = `translateY(${-$("#polText").scrollTop}px)`;
+}
+
+// Line and column of the cursor under the editor
+function polPos() {
+  const t = $("#polText"), before = t.value.slice(0, t.selectionStart).split("\n");
+  $("#polPos").textContent = `Line ${before.length}, column ${before.at(-1).length + 1}`;
+}
+
+// Select a line and bring it into view
+function polGoto(line) {
+  const t = $("#polText"), lines = t.value.split("\n");
+  const n = Math.min(Math.max(1, line), lines.length);
+  const start = lines.slice(0, n - 1).reduce((sum, l) => sum + l.length + 1, 0);
+  t.focus();
+  t.setSelectionRange(start, start + lines[n - 1].length);
+  t.scrollTop = Math.max(0, (n - 1) * parseFloat(getComputedStyle(t).lineHeight) - t.clientHeight / 2);
+  polScroll();
+  polPos();
+}
+
 async function loadPolicy() {
   const { body } = await api("api/policy");
   $("#polText").value = body.text;
@@ -16,9 +53,13 @@ async function loadPolicy() {
 
 function policyMessage(errors, okText) {
   const box = $("#polMsg");
+  polErrLines = new Set((errors || []).flatMap((e) => [...String(e).matchAll(/\bline (\d+)/g)].map((m) => +m[1])));
+  polLines(true);
   if (errors?.length) {
     box.className = "alert alert-danger";
-    box.innerHTML = `<h4 class="alert-title">Errors in the policy</h4><ul class="mb-0">${errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>`;
+    // "line N" in a message jumps to that line
+    box.innerHTML = `<h4 class="alert-title">Errors in the policy</h4><ul class="mb-0">${errors.map((e) => `<li>${
+      esc(e).replace(/\bline (\d+)/g, '<a href="#policy" class="alert-link" data-pol-line="$1">line $1</a>')}</li>`).join("")}</ul>`;
   } else if (okText) {
     box.className = "alert alert-success";
     box.textContent = okText;

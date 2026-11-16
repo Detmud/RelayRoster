@@ -184,6 +184,8 @@
 .rr-devbar { flex-wrap: wrap; gap: .5rem; }
 .rr-devbar .rr-search { flex: 1 1 12rem; }
 .rr-select { width: auto; flex: 0 1 auto; }
+/* Second row of the device filters, opened with "Filters" */
+.rr-devmore { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: .5rem; padding-top: .5rem; border-top: 1px solid var(--tblr-border-color); }
 .rr-select.rr-active { border-color: var(--tblr-primary); color: var(--tblr-primary); }
 .table th .table-sort { white-space: nowrap; background: transparent; }
 .table th.text-end .table-sort { margin-right: 0; }
@@ -214,6 +216,19 @@ pre.rr-json {
 }
 
 textarea.rr-code { min-height: 62vh; font-size: .8125rem; line-height: 1.55; tab-size: 2; resize: vertical; }
+
+/* Policy editor: line numbers beside the text. Lines do not wrap, so number and line stay side by side */
+.rr-editor { display: flex; }
+.rr-editor textarea.rr-code { flex: 1; min-width: 0; padding: .5rem .75rem; white-space: pre; overflow: auto;
+  border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.rr-editor-lines { position: relative; overflow: hidden; flex: none; width: 3.5ch; box-sizing: content-box; padding: 0 .5rem;
+  font-size: .8125rem; line-height: 1.55; text-align: right; user-select: none; color: var(--tblr-secondary);
+  background: var(--tblr-bg-surface-secondary); border: 1px solid var(--tblr-border-color); border-right: 0;
+  border-radius: var(--tblr-border-radius) 0 0 var(--tblr-border-radius); }
+.rr-editor-lines > div { position: absolute; top: .5rem; left: .5rem; right: .5rem; }
+.rr-editor-lines span { display: block; }
+.rr-editor-lines .rr-line-err { color: var(--tblr-red); font-weight: 700; }
+.rr-editor-lines .rr-line-err::before { content: "\25B8"; position: absolute; left: -.4rem; }
 
 /* Dialogs (naming plan, firmware): native <dialog>, content is a Tabler card */
 dialog.rr-dialog {

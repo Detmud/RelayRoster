@@ -815,6 +815,11 @@ def test_policy_validation():
         raise AssertionError("YAML error expected")
     except pol.PolicyError as exc:
         assert exc.errors[0].startswith("YAML error")
+    try:
+        pol.parse("profiles:\n  - name: A\n    settings: {}\n   - name: B\n")
+        raise AssertionError("YAML error expected")
+    except pol.PolicyError as exc:
+        assert exc.errors[0].startswith("YAML error in line 4, column 4: ") and "starts in line 2" in exc.errors[0], exc.errors
     default = pol.parse(open(pol.DEFAULT_POLICY_PATH, encoding="utf-8").read())
     assert default["baseline"]["sys.location.tz"] == "Europe/Berlin"
 
@@ -1016,6 +1021,9 @@ def test_match_kind_and_variant():
     hints = pol.kind_hints(policy, [i4, mini, pro])
     assert [(h["what"], h["name"], h["kind"], h["devices"]) for h in hints] == [
         ("Profile", "Buttons", "i4", 1), ("Address block", "Mini", "1", 1)], "only globs whose devices share one kind"
+    i4b = {**i4, "id": "shellyplusi4-b8d61a000102"}
+    some = {"profiles": [{"name": "Garden", "match": {"id": [i4["id"]]}}, {"name": "All", "match": {"id": [i4["id"], i4b["id"]]}}]}
+    assert [h["name"] for h in pol.kind_hints(some, [i4, i4b, mini])] == ["All"], "no hint when kind would match more devices"
 
 
 def test_models():
