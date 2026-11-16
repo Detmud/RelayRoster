@@ -41,6 +41,22 @@ Toggle once per component, check after read-back, then toggle back:
 - [ ] Backups tab: older backup, "Restore…"; the preview shows exactly this difference
 - [ ] Run the restore; the setting is back, Activity has the entry
 
+## 7. Apply the address plan
+Use one device you can reach physically: there is no rollback, and a device that does not come back needs a
+factory reset or its access point.
+- [ ] Policy: `network` with `subnet`, `dhcp_pool`, `gateway`, `nameserver` and a block that matches the test device;
+      the block lies outside the router's DHCP pool
+- [ ] Findings shows the device as outside the address plan; "Apply address plan…" lists it with the next free
+      address and the netmask, gateway and DNS server from the policy
+- [ ] Without "Allow address changes" the button "Move" is disabled; switch it on
+- [ ] Move the device: progress shows "setting address", then "waiting for device", then "moved"
+- [ ] The device list shows the new address under the same device ID, the finding is gone, Activity has the entry
+      (old → new)
+- [ ] The device's own web UI answers at the new address and shows a static IP; the old address no longer answers
+- [ ] Try to move a second device to an address that is in use (another Shelly): the job refuses, nothing is written
+- [ ] Note whether the device took the address at once or asked for a restart
+- [ ] Switch "Allow address changes" off again
+
 ## Wrap-up
 - [ ] Export Activity as CSV, the entries match the steps
 - [ ] Set the switches in Settings to the state you want to keep
