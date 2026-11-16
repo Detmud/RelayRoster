@@ -41,6 +41,8 @@ All notable changes to this project are documented here. The format follows
 - "Audit log" is now called **Activity** (`#activity`; `#audit` still works). The CSV export is named
   `relayroster-activity.csv`; the API path `/api/audit` is unchanged
 - The product name is written "RelayRoster" everywhere in the UI
+- Back to Tabler's neutral greys for the page background, cards, borders and text, and to Tabler's plain active
+  navigation; the navy tint and the marker bar from 1.0.2 are gone. Navy stays for buttons and links
 
 ## [1.0.2] - 2026-11-15
 
