@@ -210,11 +210,19 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#polSave").addEventListener("click", () => savePolicy().catch((e) => showError(e.message)));
   $("#setSave").addEventListener("click", () => saveSettings().catch((e) => showError(e.message)));
   $("#setForm").addEventListener("submit", (ev) => { ev.preventDefault(); saveSettings().catch((e) => showError(e.message)); });
+  $("#polText").addEventListener("input", () => polLines());
+  $("#polText").addEventListener("scroll", polScroll);
+  for (const type of ["keyup", "click", "focus", "input"]) $("#polText").addEventListener(type, polPos);
+  $("#polMsg").addEventListener("click", (ev) => {
+    const a = ev.target.closest("[data-pol-line]");
+    if (a) { ev.preventDefault(); polGoto(+a.dataset.polLine); }
+  });
   $("#polText").addEventListener("keydown", (ev) => {
     if (ev.key === "Tab") {
       ev.preventDefault();
       const t = ev.target, s = t.selectionStart;
       t.setRangeText("  ", s, t.selectionEnd, "end");
+      polLines();
     }
     if ((ev.metaKey || ev.ctrlKey) && ev.key === "s") { ev.preventDefault(); savePolicy(); }
   });
