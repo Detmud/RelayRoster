@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Policy editor shows line numbers and the position of the cursor. A YAML error names its line first, marks it
+  beside the text and jumps there with a click; long lines scroll sideways instead of wrapping
+
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
