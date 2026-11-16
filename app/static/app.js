@@ -506,11 +506,12 @@ function renderDashboard(devs, peerDiffs, updates, down) {
   cnt.textContent = rows.length;
   show(cnt, rows.length > 0);
 
-  // Device types with counts and installed versions; a click on the type filters the device list
+  // Device types with counts and installed versions; a click on the type filters the device list.
+  // As in the device list: what the device does first, generation and form factor in the line below
   const types = new Map();
   devs.forEach((d) => {
     const t = typeName(d);
-    if (!types.has(t)) types.set(t, { n: 0, vers: new Set() });
+    if (!types.has(t)) types.set(t, { n: 0, vers: new Set(), name: d.type_name || t, sub: d.type_name ? d.type_sub : "" });
     const e = types.get(t);
     e.n += 1;
     if (d.ver) e.vers.add(d.ver);
@@ -521,7 +522,7 @@ function renderDashboard(devs, peerDiffs, updates, down) {
     const ver = vers.length > 1 ? badge("warn", `${vers.length} versions`, vers.join(", ")) : `<span class="font-monospace small">${esc(vers[0] || "–")}</span>`;
     // Firmware sorts by the number of installed versions, then by the newest one
     return `<tr>
-      <td><a href="#devices?${esc(new URLSearchParams({ type: t }).toString())}">${esc(t)}</a></td>
+      <td data-sort="${esc(t)}"><a href="#devices?${esc(new URLSearchParams({ type: t }).toString())}">${esc(e.name)}</a>${e.sub ? `<span class="rr-sub">${esc(e.sub)}</span>` : ""}</td>
       <td class="text-end">${e.n}</td>
       <td data-sort="${vers.length} ${esc(vers.at(-1) || "")}">${ver}</td>
     </tr>`;
