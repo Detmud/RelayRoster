@@ -23,7 +23,7 @@ _TYPE_KEYS = ("kind", "variant")
 _PROFILE_KEYS = {"name", "match", "settings", "ignore", "devices", "exclude"}
 _OVERRIDE_KEYS = {"settings", "ignore"}
 _OPERATORS = {"in", "not", "min", "max"}
-_NETWORK_KEYS = {"subnet", "dhcp_pool", "blocks"}
+_NETWORK_KEYS = {"subnet", "dhcp_pool", "blocks", "gateway", "nameserver"}
 _BLOCK_KEYS = {"name", "match", "range"}
 # peer_variants is replaced by `ignore` in profile/override; the key is still accepted
 # (existing policies), but no longer evaluated.
@@ -254,6 +254,13 @@ def _validate_network(net: Any) -> list[str]:
             continue
         if key == "subnet":
             subnets = nets
+    # Only used when RelayRoster sets a static address on a device that is on DHCP
+    for key in ("gateway", "nameserver"):
+        if net.get(key) is not None:
+            try:
+                ipaddress.IPv4Address(str(net[key]))
+            except ValueError:
+                errs.append(f"network.{key}: '{net[key]}' is not an IPv4 address")
     blocks = net.get("blocks")
     if blocks is None:
         return errs
@@ -378,13 +385,14 @@ def network_findings(policy: dict[str, Any], device: dict[str, Any], used_ips: s
     used = set(used_ips or ()) - {host}
 
     def finding(tag: str, note: str, expected: Any) -> dict[str, Any]:
+        free = None
         if blk:
             free = next_free(blk, used)
             if free and reserve and used_ips is not None:
                 used_ips.add(free)
             note += f" Next free address in block: {free}." if free else f" Block '{_block_label(blk)}' is full."
         return {"kind": "network", "source": "Address plan", "path": "ip", "tag": tag,
-                "expected": expected, "actual": host, "note": note}
+                "expected": expected, "actual": host, "note": note, "target": free}
 
     expected = (f"{blk['range']} ({_block_label(blk)})" if blk
                 else ", ".join(str(n) for n in subnets) or "address block")

@@ -48,13 +48,17 @@ every save the previous file is kept as `policy.yaml.bak-<time>` (the last 20 re
 network:
   subnet: 192.168.50.0/24         # where all devices should be
   dhcp_pool: 192.168.1.0/24       # where your router puts new devices
+  gateway: 192.168.50.1           # only for "Apply address plan": used for devices that are on DHCP
+  nameserver: 192.168.50.1
   blocks:                         # address block per type, the first match wins
     - {name: Shelly 1, match: {kind: "1"}, range: 192.168.50.10-19}
     - {name: Shelly i4, match: {kind: i4}, range: 192.168.50.30-39}
 ```
 
 Findings (filter "Address") and a badge next to the IP report devices in the DHCP pool, outside the subnet, in the
-wrong block or in no block, and suggest the next free address in the block.
+wrong block or in no block, and suggest the next free address in the block. With "Allow address changes" on,
+"Apply address plan" on the Findings page sets that address as a static address on the device, see
+[Write functions](write-functions.md).
 
 ## Naming plan (`names`)
 

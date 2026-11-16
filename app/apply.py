@@ -298,6 +298,9 @@ class ApplyRunner:
         fw = self.collector.firmware.job
         if fw and fw.running:
             raise RuntimeError("A firmware update is running, wait until it has finished")
+        moving = getattr(self.collector, "address", None)
+        if moving and moving.job and moving.job.running:
+            raise RuntimeError("Addresses are being changed, wait until this has finished")
         store = self.collector.store
         out: list[Item] = []
         seen: set[str] = set()
@@ -334,6 +337,9 @@ class ApplyRunner:
         fw = self.collector.firmware.job
         if fw and fw.running:
             raise RuntimeError("A firmware update is running, wait until it has finished")
+        moving = getattr(self.collector, "address", None)
+        if moving and moving.job and moving.job.running:
+            raise RuntimeError("Addresses are being changed, wait until this has finished")
         out: list[Item] = []
         for dev_id in dict.fromkeys(str(i) for i in device_ids or []):
             d = self.collector.store.device(dev_id)

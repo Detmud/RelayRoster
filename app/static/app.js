@@ -349,6 +349,7 @@ async function pollState() {
     setMode(!!st.allow_config, !!st.allow_firmware_update);   // naming plan depends on Allow config changes
     allowReboot = !!st.allow_reboot;
     allowSetPassword = !!st.allow_set_password;
+    if (allowAddress !== !!st.allow_address) { allowAddress = !!st.allow_address; renderDrift(); }
     if (allowConfig !== !!st.allow_config) {
       allowConfig = !!st.allow_config;
       if (currentPage === "device" && devState.body && devState.tab === "settings" && !cfgDirty()) renderDeviceTab();
@@ -358,6 +359,7 @@ async function pollState() {
     $("#signOutUser").textContent = st.user || "";
     renderFwJobBar(st.firmware_job);
     renderApplyJobBar(st.apply_job);
+    renderAddrJobBar(st.address_job);
     const targets = (st.scan_targets || []).join(", ") || "no valid network";
     $("#netList").textContent = targets;
     $("#scanHint").textContent = `${targets} · ${num(st.scan_addresses)} addresses`;
@@ -386,6 +388,9 @@ async function pollState() {
     const fwRunning = !!st.firmware_job?.running;
     if (fwWasRunning && !fwRunning) await loadOverview();
     fwWasRunning = fwRunning;
+    const addrRunning = !!st.address_job?.running;   // devices have new addresses
+    if (addrWasRunning && !addrRunning) await loadOverview();
+    addrWasRunning = addrRunning;
     const applyRunning = !!st.apply_job?.running;   // reload findings after writing
     if (applyWasRunning && !applyRunning) {
       await loadOverview();
@@ -393,7 +398,7 @@ async function pollState() {
       if (currentPage === "device" && devState.id) refreshDevicePage();
     }
     applyWasRunning = applyRunning;
-    stateTimer = setTimeout(pollState, st.running ? 1000 : fwRunning || applyRunning ? 2000 : 30000);
+    stateTimer = setTimeout(pollState, st.running ? 1000 : fwRunning || applyRunning || addrRunning ? 2000 : 30000);
   } catch (e) {
     showError(`Server unreachable: ${e.message}`);
     stateTimer = setTimeout(pollState, 10000);

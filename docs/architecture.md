@@ -10,6 +10,7 @@ app/
   config.py            Settings from environment variables (also NAME_FILE for secrets)
   runtime_settings.py  Overrides from the UI stored in the database (meta.settings), validation
   collector.py         Scan and periodic reads, rename, restart, write configuration; owns the firmware updater
+  address.py           Address job: static address from the address plan, wait for the device, audit
   firmware.py          Firmware job: identity, CheckForUpdate, Update, wait for restart, audit
   apply.py             Apply profile and bulk change: preview per device, background job via set_config
   shelly.py            RPC client with allow list (is_read_only, is_rename_call, is_firmware_call, is_reboot_call, …)

@@ -10,6 +10,7 @@ reaches the network. Each write function has its own switch in **Settings**, all
 | Allow config changes | `<Component>.SetConfig`, only with fields from the allow list in `app/writable.py` (also used for device names, profiles, bulk change and restore) |
 | Allow firmware updates | `Shelly.CheckForUpdate` without parameters, `Shelly.Update` with exactly `{"stage": "stable"\|"beta"}` |
 | Allow restarting devices | `Shelly.Reboot` without parameters |
+| Allow address changes | `WiFi.SetConfig` / `Eth.SetConfig` with the static address fields only |
 | Allow setting device passwords | `Shelly.SetAuth`, only to set a password on devices that have none |
 
 The test suite checks every request sent to the simulated devices against these rules. Every write action is
@@ -27,7 +28,8 @@ read, reads the device back, stores a snapshot and writes the audit log (page Ac
 - **Edit configuration** (device page, Settings tab, "Edit"): changes collect as a draft, "Review & write" shows the
   exact calls (e.g. `Cover.SetConfig {"id": 0, "config": {"power_limit": 280}}`), then they are written. "Use …"
   takes the policy target or the majority of same-type devices into the draft. Writable fields are listed in
-  `app/writable.py`. Deliberately not writable: Wi-Fi client settings (a device could lock itself out), passwords,
+  `app/writable.py`. Deliberately not writable: Wi-Fi client settings (a device could lock itself out; the static address has its
+  own function below), passwords,
   `sys.device.profile`, calibration and measured values, scripts, schedules, webhooks and KVS.
 - **Fix on all / Apply profile / Bulk change**: write a fixed target value from a finding, a whole profile, or one path
   and value for many devices. The preview shows per device whether a value will change, is already set, is not
@@ -36,6 +38,14 @@ read, reads the device back, stores a snapshot and writes the audit log (page Ac
 - **Firmware updates**: per device, per type or all; `Shelly.CheckForUpdate`, then `Shelly.Update`, then wait for the
   new version (up to 180 s). Beta only when explicitly chosen. Firmware URLs are never accepted.
 - **Restart**: `Shelly.Reboot`, confirmed once the device answers again with a lower uptime.
+- **Apply address plan**: gives devices that are not in their address block (`network` in the policy) the next free
+  address of the block as a **static address on the device**, not as a reservation in the router. Per device:
+  nothing may answer at the new address, then the address is set, RelayRoster waits for the device there (90 s)
+  and compares its ID. Netmask, gateway and DNS server come from the device's static configuration; a device on
+  DHCP has none, then `network.gateway`, `network.nameserver` and `network.subnet` from the policy are used. One
+  device after another, never next to a firmware or apply job; moving shutters are skipped. There is no rollback:
+  a device that does not come back is reported with both addresses. Everything that addresses the device by IP
+  needs the new address afterwards.
 - **Set device password**: rolls the password from Settings out to devices that have none.
 
 Shellies without a device password can be controlled by anyone in the same network. The UI marks them as "open";

@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- **Apply address plan** (new write function, off by default, switch "Allow address changes" / `ALLOW_ADDRESS`):
+  devices outside their address block get the next free address of the block as a static address on the device.
+  Preview with editable address, one device after another, check that the address is free, wait for the device at
+  the new address and compare its ID; no rollback. `network` in the policy accepts `gateway` and `nameserver` for
+  devices that are on DHCP
+
 - Policy: `match` in profiles and address blocks accepts `kind` (what the hardware does: `2PM`, `i4`, `Plug`) and
   `variant` (`Standard`, `Pro`, `Mini`), so one rule covers all generations and survives firmware updates that
   rename device IDs. The default policy matches "Button input" by `kind: i4`. Findings shows a hint for rules that
