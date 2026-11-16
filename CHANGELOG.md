@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Policy editor shows line numbers and the position of the cursor. A YAML error names its line first, marks it
+  beside the text and jumps there with a click; long lines scroll sideways instead of wrapping
 - The hint "rule could match by function" no longer appears for a rule that picks only some devices of a kind
   (for example a list of IDs for one purpose): `kind` would match the others too
 

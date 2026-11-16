@@ -815,6 +815,11 @@ def test_policy_validation():
         raise AssertionError("YAML error expected")
     except pol.PolicyError as exc:
         assert exc.errors[0].startswith("YAML error")
+    try:
+        pol.parse("profiles:\n  - name: A\n    settings: {}\n   - name: B\n")
+        raise AssertionError("YAML error expected")
+    except pol.PolicyError as exc:
+        assert exc.errors[0].startswith("YAML error in line 4, column 4: ") and "starts in line 2" in exc.errors[0], exc.errors
     default = pol.parse(open(pol.DEFAULT_POLICY_PATH, encoding="utf-8").read())
     assert default["baseline"]["sys.location.tz"] == "Europe/Berlin"
 
