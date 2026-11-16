@@ -483,7 +483,7 @@ function renderDashboard(devs, peerDiffs, updates, down) {
   const peerTypes = data.peers.filter((g) => g.diffs.length).length;
   setStat("#cDevices", devs.length, devs.length ? [`${counts.ok} OK`, counts.new ? `${counts.new} new` : ""].filter(Boolean).join(" · ") : "Scan the network to start");
   setStat("#cFindings", data.findings.length, data.findings.length ? `on ${plural(withFindings, "device")}` : "All match the policy", "text-yellow");
-  setStat("#cPeers", peerDiffs, peerDiffs ? `in ${plural(peerTypes, "device type")}` : "Types are consistent", "text-orange");
+  setStat("#cPeers", peerDiffs, peerDiffs ? `in ${plural(peerTypes, "device type")}` : "All consistent", "text-orange");
   setStat("#cUpdates", updates, updates ? "Stable available" : "All up to date", "text-blue");
   setStat("#cDown", down, down ? "Error or stale" : "All reachable", "text-red");
 

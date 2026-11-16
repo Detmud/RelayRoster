@@ -70,11 +70,23 @@ class PolicyError(ValueError):
 
 # ---- Loading and validation ----------------------------------------------------------------
 
+def _yaml_error(exc: yaml.YAMLError) -> str:
+    """One line with the place of the problem first; the editor turns "line N" into a jump to that line."""
+    mark, problem = getattr(exc, "problem_mark", None), getattr(exc, "problem", None)
+    if mark is None or not problem:
+        return f"YAML error: {exc}"
+    out = f"YAML error in line {mark.line + 1}, column {mark.column + 1}: {problem}"
+    context, start = getattr(exc, "context", None), getattr(exc, "context_mark", None)
+    if context and start is not None and start.line != mark.line:
+        out += f" ({context} that starts in line {start.line + 1})"
+    return out
+
+
 def parse(text: str) -> dict[str, Any]:
     try:
         data = yaml.safe_load(text) or {}
     except yaml.YAMLError as exc:
-        raise PolicyError([f"YAML error: {exc}"]) from exc
+        raise PolicyError([_yaml_error(exc)]) from exc
     errors = validate(data)
     if errors:
         raise PolicyError(errors)
@@ -487,7 +499,9 @@ def profile_matches(match: dict[str, Any], device: dict[str, Any]) -> bool:
 
 def kind_hints(policy: dict[str, Any], devices: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Profiles and address blocks that still match by a glob on `app` or `id` although every device they
-    match has the same kind. Hint only, nothing is changed: `kind` reads better and survives ID renames."""
+    match has the same kind and `kind` would select exactly these devices. A rule that picks some devices of a
+    kind (a list of IDs for one purpose) gets no hint: `kind` would pull in the others. Hint only, nothing is
+    changed: `kind` reads better and survives ID renames."""
     out: list[dict[str, Any]] = []
     entries = [("Profile", p) for p in policy.get("profiles") or []]
     entries += [("Address block", b) for b in (policy.get("network") or {}).get("blocks") or []]
@@ -501,6 +515,9 @@ def kind_hints(policy: dict[str, Any], devices: list[dict[str, Any]]) -> list[di
         if len(kinds) != 1 or "unknown" in kinds:
             continue
         kind = kinds.pop()
+        by_kind = {**{k: v for k, v in match.items() if k not in globs}, "kind": kind}
+        if sum(1 for d in devices if profile_matches(by_kind, d)) != len(hit):
+            continue
         out.append({"what": what, "name": str(entry.get("name") or entry.get("range") or ""), "match": globs,
                     "kind": kind, "devices": len(hit)})
     return out
