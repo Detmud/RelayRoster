@@ -185,8 +185,8 @@ function devOverview(b) {
   const fs = b.findings.slice(0, 5);
   const findings = `<div class="card h-100"><div class="card-header"><h3 class="card-title">Findings</h3>
       <div class="card-actions">${b.findings.length ? badge("warn", b.findings.length) : badge("ok", "none")}</div></div>
-    ${fs.length ? cardTable(["Path", "Expected", "Actual"], fs.map((f) => `<tr>
-        <td class="font-monospace small">${esc(f.path)}<span class="rr-sub">${esc(KIND_LABEL[f.kind] || f.kind)} · ${esc(f.source)}</span></td>
+    ${fs.length ? cardTable(["Finding", "Expected", "Actual"], fs.map((f) => `<tr>
+        ${settingCell(f, f.note)}
         <td>${valHtml(f.expected)}</td><td>${f.kind === "missing" ? `<span class="text-secondary">not present</span>` : valHtml(f.actual)}</td></tr>`).join(""))
       : `<div class="card-body text-secondary">Matches the policy.</div>`}
     ${b.findings.length ? `<div class="card-footer"><a href="${devHref(d.id, "findings")}">${b.findings.length > fs.length ? `All ${b.findings.length} findings` : "Findings and policy rules"}</a></div>` : ""}</div>`;
@@ -267,13 +267,13 @@ function peerCard(p, d) {
   const others = (r) => r.others.map((o) => `${esc(o.name || o.id)}: ${esc(fmtVal(o.value))}`).join("\n");
   const rows = [
     ...p.diffs.map((r) => `<tr>
-      <td class="font-monospace small">${esc(r.path)}</td>
+      ${settingCell(r)}
       <td class="rr-outlier">${valHtml(r.value)}</td>
       <td title="${esc(others(r))}">${r.has_majority ? valHtml(r.majority) : `<span class="text-secondary">no majority</span>`}</td></tr>`),
   ].join("");
   const key = `${p.app}|${p.profile || ""}`;
   return `<div class="card h-100">${head}
-    ${rows ? cardTable(["Path", "This device", "Others"], rows) : `<div class="card-body text-secondary">Same as the other ${p.size - 1} device${p.size === 2 ? "" : "s"} of this type.</div>`}
+    ${rows ? cardTable(["Setting", "This device", "Others"], rows) : `<div class="card-body text-secondary">Same as the other ${p.size - 1} device${p.size === 2 ? "" : "s"} of this type.</div>`}
     <div class="card-footer"><a href="#peers" data-peer-goto="${esc(key)}">Peer comparison: ${esc(p.model_name || p.app)}${p.profile ? ` · ${esc(p.profile)}` : ""}</a></div></div>`;
 }
 
@@ -424,7 +424,7 @@ const compDocLink = (secId) => {
 const ruleSource = (s) => s.startsWith("Profile: ") ? `<a href="${profHref(s.slice(9))}">${esc(s)}</a>` : esc(s);
 
 function devFindings(b) {
-  const findings = b.findings.length ? `<div class="card">${cardTable(["Path", "Expected", "Actual", "Source"], findingRows(b.findings, true))}</div>`
+  const findings = b.findings.length ? `<div class="card">${cardTable(["Finding", "Expected", "Actual", "Source"], findingRows(b.findings, true))}</div>`
     : `<div class="card"><div class="card-body text-secondary">Matches the policy.</div></div>`;
   const rules = b.rules.length ? `<div class="card">${cardTable(["Pattern", "Expected", "Source", ""], b.rules.map((r, i) =>
     `<tr><td class="font-monospace small">${esc(r.path)}</td><td>${valHtml(r.expected)}</td><td class="text-secondary small">${ruleSource(r.source)}</td>

@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Findings and the peer comparison show a readable name per setting ("Switch 0 · Auto off", "Password
+  protection") and the note what is wrong; the path follows below in small type. The API adds `label` to findings
+  and peer rows
+
 - Dialogs close in one way: Cancel or Close in the footer (or Esc); no X in the header and no closing by a click
   next to the dialog. Confirmations are dialogs of the app with a named button instead of the browser's own
 
