@@ -150,7 +150,7 @@ function profNotice() {
 }
 
 function renderProfileList() {
-  profHeader("Configuration", "Profiles", PAGES.profiles.sub);
+  profHeader("Target state", "Profiles", PAGES.profiles.sub);
   if (prof.errors.length) {
     $("#profPage").innerHTML = `<div class="alert alert-danger"><h4 class="alert-title">policy.yaml is invalid</h4>
       Profiles can be edited again once the file is fixed in <a href="#policy">Policy</a>.
@@ -237,7 +237,7 @@ function ruleRow(r, i) {
 
 function renderProfileEditor() {
   const e = prof.edit, d = e.draft;
-  profHeader("Configuration / Profiles", e.original === null ? "New profile" : `Profile: ${e.original}`, "Target values for one function. Nothing is written to a device; the preview shows which devices match and which findings result.");
+  profHeader("Target state / Profiles", e.original === null ? "New profile" : `Profile: ${e.original}`, "Target values for one function. Nothing is written to a device; the preview shows which devices match and which findings result.");
   if (e.missing) {
     $("#profPage").innerHTML = `<div class="card"><div class="empty"><p class="empty-title">Profile not found</p>
       <p class="empty-subtitle text-secondary">${esc(e.original)}</p><div class="empty-action"><a class="btn" href="#profiles">All profiles</a></div></div></div>`;

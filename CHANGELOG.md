@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Navigation grouped by what a page is for: Dashboard and Devices on top, then Checks (Findings, Peer comparison,
+  Firmware), Target state (Profiles, Policy), Tools (Bulk change, Backups) and System (Activity, Settings)
+
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
