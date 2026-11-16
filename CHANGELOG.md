@@ -5,6 +5,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Device list: search, type and status stay in the filter bar; the filters for address, findings, firmware,
+  password and radio stack open with "Filters", which shows how many of them are set. The button to change a
+  setting on the devices shown is called "Bulk change", like the page it opens, and carries its icon
 - Dashboard: "Device types" shows the type as in the device list, the function first and generation and form
   factor in the line below, instead of one long name that wrapped
 - Dashboard: the tile "Peer differences" says "All consistent" at 0, in line with the other tiles

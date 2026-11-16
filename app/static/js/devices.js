@@ -131,6 +131,26 @@ function syncViewControls() {
     el.classList.toggle("rr-active", !!view[k]);
   }
   $$("#devTable .table-sort").forEach((b) => sortMark(b.closest("th"), b.dataset.sort === view.sort ? view.dir : ""));
+  syncMoreFilters();
+}
+
+// Search, type and status are always visible; the other filters sit in a second row behind "Filters".
+// While that row is closed the button shows how many of its filters are set.
+let devMoreOpen = false;
+try { devMoreOpen = localStorage.getItem("relayroster.devmore") === "1"; } catch { /* ignore */ }
+function syncMoreFilters() {
+  const set = [...$$("#devMore select")].filter((el) => el.value).length;
+  const btn = $("#devMoreBtn"), cnt = $("#devMoreCount");
+  show($("#devMore"), devMoreOpen);
+  btn.setAttribute("aria-expanded", String(devMoreOpen));
+  btn.classList.toggle("active", devMoreOpen);
+  cnt.textContent = set;
+  show(cnt, set > 0 && !devMoreOpen);
+}
+function toggleMoreFilters() {
+  devMoreOpen = !devMoreOpen;
+  try { localStorage.setItem("relayroster.devmore", devMoreOpen ? "1" : "0"); } catch { /* ignore */ }
+  syncMoreFilters();
 }
 
 function fillTypeFilter() {
@@ -164,6 +184,9 @@ function renderDevices() {
   show($("#devEmpty"), total === 0);
   show($("#devNoMatch"), total > 0 && rows.length === 0);
   show($("#devReset"), filtered);
+  // Bulk change takes the devices shown along; say how many, so the button is more than the entry in the menu
+  $("#devBulk").title = rows.length ? `Open Bulk change with the ${plural(rows.length, "device")} shown here` : "No devices shown";
+  $("#devBulk").disabled = rows.length === 0;
   $("#devCount").textContent = total ? (filtered ? `${rows.length} of ${total} devices` : `${total} device${total === 1 ? "" : "s"}`) : "";
   $("#devTable tbody").innerHTML = rows.map((d) => `
     <tr class="cursor-pointer" data-id="${esc(d.id)}">

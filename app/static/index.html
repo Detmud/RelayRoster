@@ -284,40 +284,43 @@
                 <option value="stale">Stale</option>
                 <option value="new">New</option>
               </select>
-              <select id="fAddress" class="form-select form-select-sm rr-select" aria-label="Filter by address">
-                <option value="">Any address</option>
-                <option value="ok">Address OK</option>
-                <option value="any">Address finding</option>
-                <option value="pool">DHCP</option>
-                <option value="outside">Foreign network</option>
-                <option value="block">Wrong block</option>
-                <option value="noblock">No block</option>
-              </select>
-              <select id="fFindings" class="form-select form-select-sm rr-select" aria-label="Filter by findings">
-                <option value="">Any findings</option>
-                <option value="with">With findings</option>
-                <option value="none">No findings</option>
-              </select>
-              <select id="fFirmware" class="form-select form-select-sm rr-select" aria-label="Filter by firmware">
-                <option value="">Any firmware</option>
-                <option value="update">Update available</option>
-                <option value="current">Up to date</option>
-              </select>
-              <select id="fAuth" class="form-select form-select-sm rr-select" aria-label="Filter by password">
-                <option value="">Any password</option>
-                <option value="open">No password</option>
-                <option value="set">Password set</option>
-              </select>
-              <select id="fStack" class="form-select form-select-sm rr-select" aria-label="Filter by radio stack">
-                <option value="">Any stack</option>
-                <option value="matter">Matter</option>
-                <option value="zigbee">Zigbee</option>
-                <option value="wifi">Wi-Fi only</option>
-              </select>
+              <button id="devMoreBtn" class="btn btn-sm" type="button" aria-expanded="false" aria-controls="devMore" title="Filter by address, findings, firmware, password and radio stack"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227"/></svg>Filters<span id="devMoreCount" class="badge bg-primary text-primary-fg ms-2 d-none"></span></button>
               <div class="ms-auto d-flex align-items-center gap-2">
                 <span id="devCount" class="text-secondary small text-nowrap"></span>
-                <button id="devReset" class="btn btn-sm d-none" type="button">Reset</button>
-                <button id="devBulk" class="btn btn-sm" type="button" title="Change one setting on the devices shown">Change setting…</button>
+                <button id="devReset" class="btn btn-sm d-none" type="button" title="Clear search and all filters"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>Reset</button>
+                <button id="devBulk" class="btn btn-sm" type="button" title="Open Bulk change with the devices shown here"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l12 0"/><path d="M19 16l0 6"/><path d="M16 19l6 0"/></svg>Bulk change</button>
+              </div>
+              <div id="devMore" class="rr-devmore d-none">
+                <select id="fAddress" class="form-select form-select-sm rr-select" aria-label="Filter by address">
+                  <option value="">Any address</option>
+                  <option value="ok">Address OK</option>
+                  <option value="any">Address finding</option>
+                  <option value="pool">DHCP</option>
+                  <option value="outside">Foreign network</option>
+                  <option value="block">Wrong block</option>
+                  <option value="noblock">No block</option>
+                </select>
+                <select id="fFindings" class="form-select form-select-sm rr-select" aria-label="Filter by findings">
+                  <option value="">Any findings</option>
+                  <option value="with">With findings</option>
+                  <option value="none">No findings</option>
+                </select>
+                <select id="fFirmware" class="form-select form-select-sm rr-select" aria-label="Filter by firmware">
+                  <option value="">Any firmware</option>
+                  <option value="update">Update available</option>
+                  <option value="current">Up to date</option>
+                </select>
+                <select id="fAuth" class="form-select form-select-sm rr-select" aria-label="Filter by password">
+                  <option value="">Any password</option>
+                  <option value="open">No password</option>
+                  <option value="set">Password set</option>
+                </select>
+                <select id="fStack" class="form-select form-select-sm rr-select" aria-label="Filter by radio stack">
+                  <option value="">Any stack</option>
+                  <option value="matter">Matter</option>
+                  <option value="zigbee">Zigbee</option>
+                  <option value="wifi">Wi-Fi only</option>
+                </select>
               </div>
             </div>
             <div class="table-responsive">
@@ -337,7 +340,7 @@
             </div>
             <div id="devNoMatch" class="empty d-none">
               <p class="empty-title">No device matches the filters</p>
-              <p class="empty-subtitle text-secondary"><button id="devReset2" class="btn btn-sm" type="button">Reset filters</button></p>
+              <p class="empty-subtitle text-secondary"><button id="devReset2" class="btn btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>Reset filters</button></p>
             </div>
             <div id="devEmpty" class="empty d-none">
               <p class="empty-title">No devices yet</p>
