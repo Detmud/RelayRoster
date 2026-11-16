@@ -217,7 +217,7 @@ function renderStaleBar() {
 }
 
 async function removeStaleRule(r) {
-  if (!confirm(`Remove ${r.path} (${r.source}) from policy.yaml? The previous version is kept as a backup.`)) return;
+  if (!await confirmDialog(`Remove ${r.path} (${r.source}) from policy.yaml? The previous version is kept as a backup.`, "Remove rule", true)) return;
   const { status, body } = await api("api/policy/rule/remove", { method: "POST", json: { source: r.source, path: r.path, device_id: r.device_id }, keep: "all" });
   if (status >= 400) { showError((body.errors || [body.detail]).join(" · ")); return; }
   policyLoaded = false;

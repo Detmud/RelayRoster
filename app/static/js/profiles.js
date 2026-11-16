@@ -36,7 +36,7 @@ async function savePolicy() {
   const { status, body } = await api("api/policy", { method: "PUT", json: { text: $("#polText").value, base_hash: policyHash }, keep: "all" });
   if (status === 409) {
     policyMessage(body.errors);
-    if (confirm(`${body.errors[0]} Load the current version? Your edits in the editor are discarded.`)) await loadPolicy();
+    if (await confirmDialog(`${body.errors[0]} Load the current version? Your edits in the editor are discarded.`, "Load current version", true)) await loadPolicy();
     return;
   }
   if (status >= 400) { policyMessage(body.errors || [body.detail]); return; }
@@ -213,7 +213,7 @@ async function moveProfile(i, dir) {
 }
 
 async function deleteProfile(p) {
-  if (!confirm(`Delete profile "${p.name}"? Its rules no longer apply to ${p.devices.length} device(s). policy.yaml is backed up first.`)) return;
+  if (!await confirmDialog(`Delete profile "${p.name}"? Its rules no longer apply to ${p.devices.length} device(s). policy.yaml is backed up first.`, "Delete profile", true)) return;
   try {
     await profWrite(`api/profiles/${encodeURIComponent(p.name)}`, "DELETE");
     prof.notice = { kind: "ok", html: `Profile <b>${esc(p.name)}</b> deleted.` };
