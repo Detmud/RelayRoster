@@ -296,6 +296,21 @@ function peerHiddenBlock(g, cols) {
     </details>`;
 }
 
+// Outliers that can take the majority value: devices whose firmware does not know the setting cannot be written
+const peerFixTargets = (r) => r.outliers.filter((id) => r.values[id] !== "__missing__");
+// Buttons per difference: only for settings RelayRoster may write; the preview stays the authority
+function peerFixButtons(g, r, i) {
+  if (!r.editable) return "";
+  const key = `data-peer-key="${esc(peerKey(g))}" data-peer-row="${i}"`;
+  const off = allowConfig ? "" : "Turn on “Allow config changes” in Settings.";
+  const n = peerFixTargets(r).length;
+  const noMajority = r.majority === "__missing__" ? "Most devices do not have this setting." : n ? "" : "The differing devices do not have this setting.";
+  const major = r.has_majority ? `<button class="btn btn-sm" type="button" data-peer-major ${key}${off || noMajority ? " disabled" : ""}
+      title="${esc(off || noMajority || `Write ${fmtVal(r.majority)} to ${plural(n, "device")} that differ`)}">Use majority</button> ` : "";
+  return `${major}<button class="btn btn-sm" type="button" data-peer-set ${key}${off ? " disabled" : ""}
+      title="${esc(off || "Choose another value in Bulk change")}">Set…</button>`;
+}
+
 function peerGroupBody(g) {
   const n = g.diffs.length;
   const info = `<div class="card-body border-bottom py-2 d-flex align-items-center gap-2 flex-wrap">
@@ -304,15 +319,15 @@ function peerGroupBody(g) {
   const cols = g.devices.map((d) => `<th title="${esc(d.id)}">${devLink(d.id, d.name || d.id)}</th>`).join("");
   const extra = peerHiddenBlock(g, cols);
   if (!n) return `${info}<div class="card-body text-secondary">All compared settings are identical.</div>${extra}`;
-  const rows = g.diffs.map((r) => `<tr>
+  const rows = g.diffs.map((r, i) => `<tr>
     ${settingCell(r, r.has_majority ? `Majority: ${fmtVal(r.majority)}` : "No majority")}
     ${g.devices.map((d) => {
       const v = r.values[d.id];
       const cls = [r.outliers.includes(d.id) ? "rr-outlier" : "", v === "__missing__" ? "rr-missing" : ""].join(" ").trim();
       return `<td class="${cls}">${valHtml(v)}</td>`;
-    }).join("")}</tr>`).join("");
+    }).join("")}<td class="text-end text-nowrap">${peerFixButtons(g, r, i)}</td></tr>`).join("");
   return `${info}<div class="table-responsive"><table class="table table-vcenter card-table">
-    <thead><tr><th>Setting</th>${cols}</tr></thead><tbody>${rows}</tbody></table></div>${extra}`;
+    <thead><tr><th>Setting</th>${cols}<th></th></tr></thead><tbody>${rows}</tbody></table></div>${extra}`;
 }
 
 // Summary below the tabs: uniform types (click shows the comparison) and single devices (click: detail)

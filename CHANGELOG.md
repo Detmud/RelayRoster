@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Peer comparison: "Use majority" writes the majority value to the differing devices through the usual preview,
+  optionally with a rule in the policy; "Set…" opens Bulk change with the setting and the type filled in. Needs
+  "Allow config changes"
+
 - Findings and the peer comparison show a readable name per setting ("Switch 0 · Auto off", "Password
   protection") and the note what is wrong; the path follows below in small type. The API adds `label` to findings
   and peer rows
