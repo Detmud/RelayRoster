@@ -51,6 +51,8 @@ class Settings:
     shelly_password: str = field(default_factory=lambda: _env("SHELLY_PASSWORD", "") or "")
     # Start firmware updates (Shelly.Update, channel stable/beta) from the UI. Off by default.
     allow_firmware_update: bool = field(default_factory=lambda: _bool("ALLOW_FIRMWARE_UPDATE", False))
+    # Firmware updates running at the same time in one job. 1 = one device after the other.
+    firmware_parallel: int = field(default_factory=lambda: _int("FIRMWARE_PARALLEL", 4))
     # Restart devices from the UI (Shelly.Reboot without parameters). Off by default.
     allow_reboot: bool = field(default_factory=lambda: _bool("ALLOW_REBOOT", False))
     # Set the device password (Settings) on devices without password (Shelly.SetAuth). Off by default.

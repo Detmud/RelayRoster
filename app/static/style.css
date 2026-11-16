@@ -220,6 +220,15 @@ dialog.rr-dialog {
   border: 0; padding: 0; background: transparent; color: inherit;
   width: min(980px, 96vw); max-height: 90vh;
 }
+/* Steps of a firmware update per device: passed, running, open */
+.rr-steps { display: flex; gap: 2px; margin-top: .35rem; max-width: 22rem; }
+.rr-step { flex: 1; font-size: .6875rem; line-height: 1.2; text-align: center; padding: .15rem .25rem; white-space: nowrap;
+  color: var(--tblr-secondary); background: var(--tblr-bg-surface-secondary); border-bottom: 2px solid var(--tblr-border-color); }
+.rr-step-done { color: var(--tblr-body-color); border-bottom-color: var(--tblr-green); }
+.rr-step-now { color: var(--tblr-body-color); font-weight: 600; border-bottom-color: var(--tblr-primary); animation: rr-step-pulse 1.4s ease-in-out infinite; }
+.rr-step-failed { color: var(--tblr-red); font-weight: 600; border-bottom-color: var(--tblr-red); }
+@keyframes rr-step-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .rr-step-now { animation: none; } }
 dialog.rr-dialog-confirm { width: min(30rem, 96vw); }
 .rr-addr-input { width: 10.5rem; }
 dialog.rr-dialog::backdrop { background: rgba(10, 12, 16, .5); }

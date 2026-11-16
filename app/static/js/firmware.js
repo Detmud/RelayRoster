@@ -3,16 +3,38 @@
 // ---- Firmware-Update -------------------------------------------------------------------
 
 const FW_STATUS = {
-  queued: ["neutral", "waiting"], checking: ["info", "checking"], updating: ["info", "updating"],
-  rebooting: ["info", "restarting"], done: ["ok", "updated"], up_to_date: ["ok", "up to date"],
-  failed: ["bad", "failed"], skipped: ["neutral", "skipped"],
+  queued: ["neutral", "waiting"], checking: ["info", "checking"], requested: ["info", "update requested"],
+  installing: ["info", "installing"], rebooting: ["info", "restarting"], verifying: ["info", "verifying"],
+  done: ["ok", "updated"], up_to_date: ["ok", "up to date"], failed: ["bad", "failed"], skipped: ["neutral", "skipped"],
 };
+// Steps of one update in order, with what happens on the device (tooltip)
+const FW_STEPS = [
+  ["checking", "Check", "Identity checked, device asks the vendor for the newest version"],
+  ["requested", "Request", "Shelly.Update sent to the device"],
+  ["installing", "Install", "Device downloads and writes the firmware; it still answers with the old version"],
+  ["rebooting", "Restart", "Device does not answer: it restarts with the new firmware"],
+  ["verifying", "Verify", "Device is back with the new version; RelayRoster reads it again"],
+];
+// Step line of a device: passed steps filled, the running one pulsing, with the seconds at which each step began.
+// A step the device never showed (e.g. Install when it restarted at once) counts as passed when a later one was reached.
+function fwSteps(it) {
+  const at = Object.fromEntries((it.phases || []).map(([s, t]) => [s, t]));
+  const last = FW_STEPS.reduce((n, [key], i) => (key in at ? i : n), -1);
+  if (last < 0) return "";
+  const end = it.status === "done" ? "done" : it.status === "failed" ? "failed" : "";
+  return `<div class="rr-steps" role="img" aria-label="${esc((FW_STATUS[it.status] || [0, it.status])[1])}">${FW_STEPS.map(([key, label, help], i) => {
+    const cls = i < last || (i === last && end === "done") ? "rr-step-done" : i === last ? (end === "failed" ? "rr-step-failed" : "rr-step-now") : "";
+    return `<span class="rr-step ${cls}" title="${esc(help)}${key in at ? ` · after ${at[key]} s` : ""}">${label}</span>`;
+  }).join("")}</div>`;
+}
 const fwStatusBadge = (it) => {
   const [kind, text] = FW_STATUS[it.status] || ["neutral", it.status];
   return badge(kind, text, it.error || "");
 };
+const FW_ORDER = Object.keys(FW_STATUS);     // sort order of the Result column: by progress
 let fwWasRunning = false;
 let fwTimer = null;
+let fwParallel = 1;        // from /api/state: devices updated at the same time
 let fwSelection = [];
 
 function renderFwJobBar(job) {
@@ -20,8 +42,9 @@ function renderFwJobBar(job) {
   if (!job?.running) { show(bar, false); return; }
   const cur = job.current;
   bar.innerHTML = `<div class="d-flex align-items-center gap-3 flex-wrap"><div class="flex-fill rr-minw0">
-      <strong>Firmware update running</strong> · ${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}
-      ${cur ? `<div class="small text-secondary">${esc(cur.name || cur.device_id)}: ${esc((FW_STATUS[cur.status] || [0, cur.status])[1])}${cur.target ? ` → ${esc(cur.target)}` : ""}</div>` : ""}
+      <strong>Firmware update running</strong> · ${job.done} of ${job.total} done${job.cancelled ? " · no further devices are started" : ""}
+      ${job.active > 1 ? `<div class="small text-secondary">${job.active} devices are updating at the same time</div>`
+        : cur ? `<div class="small text-secondary">${esc(cur.name || cur.device_id)}: ${esc((FW_STATUS[cur.status] || [0, cur.status])[1])}${cur.target ? ` → ${esc(cur.target)}` : ""}</div>` : ""}
     </div><button class="btn btn-sm" type="button" id="fwJobShow">Show</button></div>`;
   show(bar, true);
   $("#fwJobShow").addEventListener("click", () => openFwJob());
@@ -52,7 +75,7 @@ function renderFwSelect(stage) {
         <td class="font-monospace small fw-bold">${esc(d.updates[stage])}</td>
         <td class="rr-result">${badge("neutral", "–")}</td></tr>`).join("")}</tbody></table></div></div>`
       : `<p class="text-secondary mb-0">No ${stage} update available for the selected devices.</p>`}
-    <p class="text-secondary small mt-3 mb-0">RelayRoster checks each device for the latest version right before updating, waits for the restart and confirms the new version. Lights and shutters on a device are briefly unavailable during its restart.</p>`;
+    <p class="text-secondary small mt-3 mb-0">Up to ${fwParallel} ${fwParallel === 1 ? "device" : "devices at the same time"} (Settings: Parallel firmware updates). RelayRoster checks each device for the latest version right before updating, waits for the restart and confirms the new version. Lights and shutters on a device are briefly unavailable during its restart.</p>`;
   $("#fwBeta")?.addEventListener("change", (ev) => renderFwSelect(ev.target.checked ? "beta" : "stable"));
   const boxes = () => $$("tbody input[type=checkbox]", $("#fwBody"));
   const update = () => {
@@ -95,12 +118,14 @@ function renderFwJob(job) {
       <td>${esc(it.name || it.device_id)}<span class="rr-sub">${esc(it.host)}</span></td>
       <td class="font-monospace small">${esc(it.old || "–")}</td>
       <td class="font-monospace small fw-bold">${esc(it.new || it.target || "–")}</td>
-      <td>${fwStatusBadge(it)}${it.duration_s != null ? ` <span class="text-secondary small">${it.duration_s} s</span>` : ""}
-        ${it.error ? `<span class="rr-sub text-red">${esc(it.error)}</span>` : ""}</td></tr>`).join("")}</tbody></table></div></div>`;
+      <td data-sort="${FW_ORDER.indexOf(it.status)}">${fwStatusBadge(it)}${it.duration_s != null || it.elapsed_s != null ? ` <span class="text-secondary small">${it.duration_s ?? it.elapsed_s} s</span>` : ""}
+        ${fwSteps(it)}${it.error ? `<span class="rr-sub text-red">${esc(it.error)}</span>` : ""}</td></tr>`).join("")}</tbody></table></div></div>`;
   const c = job.counts || {};
   const parts = [c.done && `${c.done} updated`, c.up_to_date && `${c.up_to_date} already up to date`,
     c.failed && `${c.failed} failed`, c.skipped && `${c.skipped} skipped`].filter(Boolean);
-  $("#fwSummary").textContent = (job.running ? `${job.done} of ${job.total} done${job.cancelled ? " · stopping after current device" : ""}` : (parts.join(", ") || "Finished.")) + (job.running ? " · Closing this window does not stop the job." : "");
+  $("#fwSummary").textContent = job.running
+    ? `${job.done} of ${job.total} done · ${job.active} running${job.cancelled ? " · no further devices are started" : ""} · Closing this window does not stop the job.`
+    : (parts.join(", ") || "Finished.");
   show($("#fwStart"), false);
   show($("#fwCancel"), job.running && !job.cancelled);
   $("#fwClose").textContent = "Close";

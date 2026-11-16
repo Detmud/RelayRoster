@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
+  Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
+  device: check, request, install, restart, verify, with the seconds each step began
+
 - **Apply address plan** (new write function, off by default, switch "Allow address changes" / `ALLOW_ADDRESS`):
   devices outside their address block get the next free address of the block as a static address on the device.
   Preview with editable address, one device after another, check that the address is free, wait for the device at

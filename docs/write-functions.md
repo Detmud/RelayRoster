@@ -21,7 +21,8 @@ Test write functions on a device that is not doing anything important first.
 
 ## How writing works
 
-All of them follow the same pattern: preview first, then a background job that handles one device after the other,
+All of them follow the same pattern: preview first, then a background job that handles one device after the other
+(firmware updates: several at a time),
 checks the device identity (`Shelly.GetDeviceInfo`) before writing, aborts if the device changed since it was last
 read, reads the device back, stores a snapshot and writes the audit log (page Activity).
 
@@ -35,8 +36,10 @@ read, reads the device back, stores a snapshot and writes the audit log (page Ac
   and value for many devices. The preview shows per device whether a value will change, is already set, is not
   supported or not writable. Bulk change can also record the rule in `policy.yaml` so later drift is reported.
 - **Restore**: play a configuration from a backup back onto the same device, with a preview of every path that changes.
-- **Firmware updates**: per device, per type or all; `Shelly.CheckForUpdate`, then `Shelly.Update`, then wait for the
-  new version (up to 180 s). Beta only when explicitly chosen. Firmware URLs are never accepted.
+- **Firmware updates**: per device, per type or all, up to four devices at the same time ("Parallel firmware
+  updates" in Settings, `FIRMWARE_PARALLEL`; 1 = one after the other); `Shelly.CheckForUpdate`, then `Shelly.Update`,
+  then wait for the new version (up to 180 s). The dialog shows the step of every device: check, request, install,
+  restart, verify. Beta only when explicitly chosen. Firmware URLs are never accepted.
 - **Restart**: `Shelly.Reboot`, confirmed once the device answers again with a lower uptime.
 - **Apply address plan**: gives devices that are not in their address block (`network` in the policy) the next free
   address of the block as a **static address on the device**, not as a reservation in the router. Per device:

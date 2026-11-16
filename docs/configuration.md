@@ -16,6 +16,7 @@ Only via the environment: `OIDC_*` (so a typo cannot lock you out), `DATA_DIR` a
 | `SCAN_TIMEOUT_SECONDS` | `1.5` | Timeout per address during a scan |
 | `SHELLY_PASSWORD` | empty | Device password (digest auth, user `admin`) |
 | `ALLOW_FIRMWARE_UPDATE` | `false` | Allow firmware updates |
+| `FIRMWARE_PARALLEL` | `4` | Firmware updates running at the same time (1 to 16; 1 = one after the other) |
 | `ALLOW_REBOOT` | `false` | Allow restarting devices |
 | `ALLOW_ADDRESS` | `false` | Allow setting a static IP address from the address plan |
 | `ALLOW_SET_PASSWORD` | `false` | Allow setting the device password on devices without one |

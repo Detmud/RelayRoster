@@ -459,13 +459,13 @@
     <div class="card-header">
       <div>
         <h3 class="card-title">Firmware update</h3>
-        <div class="text-secondary small">One device after another. Each device restarts during its update.</div>
+        <div class="text-secondary small">Several devices at a time. Each device restarts during its update.</div>
       </div>
     </div>
     <div class="card-body rr-dialog-body" id="fwBody"></div>
     <div class="card-footer d-flex gap-2 justify-content-end flex-wrap">
       <span id="fwSummary" class="me-auto text-secondary small align-self-center"></span>
-      <button class="btn btn-outline-danger d-none" type="button" id="fwCancel">Stop after current device</button>
+      <button class="btn btn-outline-danger d-none" type="button" id="fwCancel" title="Updates that are running finish; no further device is started">Stop remaining devices</button>
       <button class="btn" data-close type="button" id="fwClose">Cancel</button>
       <button class="btn btn-primary" type="button" id="fwStart">Update</button>
     </div>
