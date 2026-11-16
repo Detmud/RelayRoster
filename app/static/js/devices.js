@@ -55,7 +55,10 @@ function matches(d) {
   // MAC also findable without colons (1020ba000201), as it appears in the device ID
   if (q && ![d.name, d.id, d.app, d.model, d.model_name, d.host, d.profile, d.mac, (d.mac || "").replace(/:/g, ""), ...(d.profiles || [])]
     .some((x) => String(x ?? "").toLowerCase().includes(q))) return false;
-  if (view.type && typeName(d) !== view.type) return false;
+  if (view.type) {
+    const m = /^(kind|gen|variant):(.*)$/.exec(view.type);
+    if (m ? String(d[m[1]] ?? "") !== m[2] : typeName(d) !== view.type) return false;
+  }
   // "down" like the Unreachable tile on the dashboard: error or stale
   if (view.status === "down" ? !isDown(d) : view.status && statusKey(d) !== view.status) return false;
   if (view.address) {
@@ -134,7 +137,16 @@ function fillTypeFilter() {
   const sel = $("#fApp");
   const apps = [...new Set(data.devices.map(typeName))].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const counts = Object.fromEntries(apps.map((a) => [a, data.devices.filter((d) => typeName(d) === a).length]));
-  sel.innerHTML = `<option value="">All types</option>${apps.map((a) => `<option value="${esc(a)}">${esc(a)} (${counts[a]})</option>`).join("")}`;
+  // Function (kind), generation and form factor as "kind:2PM", "gen:3", "variant:Mini"; the exact type by its name
+  const group = (label, key, get, text) => {
+    const vals = [...new Set(data.devices.map(get).filter((v) => v != null && v !== ""))].sort((a, b) => natCmp(String(a), String(b)));
+    return vals.length > 1 ? `<optgroup label="${label}">${vals.map((v) => `<option value="${key}:${esc(v)}">${esc(text(v))} (${data.devices.filter((d) => get(d) === v).length})</option>`).join("")}</optgroup>` : "";
+  };
+  sel.innerHTML = `<option value="">All types</option>
+    ${group("Function", "kind", (d) => d.kind, (v) => (v === "unknown" ? "Unknown" : `Shelly ${v}`))}
+    ${group("Generation", "gen", (d) => d.gen, (v) => `Gen${v}`)}
+    ${group("Form factor", "variant", (d) => d.variant, (v) => v)}
+    <optgroup label="Type">${apps.map((a) => `<option value="${esc(a)}">${esc(a)} (${counts[a]})</option>`).join("")}</optgroup>`;
 }
 
 function setView(patch) {
@@ -205,6 +217,17 @@ function findingRows(fs, withNote, groups = null) {
   }).join("");
 }
 
+// Profiles and address blocks that match by a glob on app or id where kind would do. Hint only
+function renderKindBar() {
+  const hints = data.kind_hints || [];
+  const bar = $("#kindBar");
+  show(bar, hints.length > 0);
+  bar.innerHTML = hints.length ? `<strong>${plural(hints.length, "rule")} could match by function.</strong>
+    A glob on the app code or the device ID breaks when a firmware update renames IDs and misses other generations of the same device. Change <code>match</code> in <a href="#policy">Policy</a> if you like; nothing is changed automatically.
+    <ul class="mb-0 mt-2">${hints.map((h) => `<li>${esc(h.what)} <b>${esc(h.name)}</b>: <code>${esc(Object.entries(h.match).map(([k, v]) => `${k}: ${fmtVal(v)}`).join(", "))}</code>
+      matches ${plural(h.devices, "device")}, all of them <code>kind: ${esc(h.kind)}</code></li>`).join("")}</ul>` : "";
+}
+
 // Rules whose path exists on no device, e.g. ble.enable since firmware 2.0
 function renderStaleBar() {
   const stale = data.stale_rules || [];
@@ -249,6 +272,7 @@ function renderPlanBar() {
 function renderDrift() {
   renderPlanBar();
   renderStaleBar();
+  renderKindBar();
   const groups = fixGroups();
   const list = data.findings.filter((f) => !driftKind || f.kind === driftKind);
   show($("#driftEmpty"), list.length === 0);
