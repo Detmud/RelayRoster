@@ -184,6 +184,9 @@ function renderDevices() {
   show($("#devEmpty"), total === 0);
   show($("#devNoMatch"), total > 0 && rows.length === 0);
   show($("#devReset"), filtered);
+  // Bulk change takes the devices shown along; say how many, so the button is more than the entry in the menu
+  $("#devBulk").title = rows.length ? `Open Bulk change with the ${plural(rows.length, "device")} shown here` : "No devices shown";
+  $("#devBulk").disabled = rows.length === 0;
   $("#devCount").textContent = total ? (filtered ? `${rows.length} of ${total} devices` : `${total} device${total === 1 ? "" : "s"}`) : "";
   $("#devTable tbody").innerHTML = rows.map((d) => `
     <tr class="cursor-pointer" data-id="${esc(d.id)}">

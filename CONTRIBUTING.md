@@ -43,6 +43,17 @@ overview of the modules.
   after it, directly left of the primary button; Esc does the same, a click on the backdrop does nothing. While a
   job runs the footer only offers "Stop after current device" and Close. Confirmations use `confirmDialog` with a
   named primary button ("Delete profile"), never the browser's `confirm()`.
+- **Buttons**: the text is what a user reads, an icon only helps to find the button again.
+  - *Text only* is the default: the buttons of a dialog or form (Save, Update, Cancel, "Delete profile") and
+    choices that stand side by side (the kinds on Findings). The text is a verb that says what happens.
+  - *Icon and text* for the actions of a page header or of the bar above a table (Sync now, Filters, Device web UI):
+    several buttons next to each other, used again and again. The icon stands left of the text.
+  - *Icon only* when the same action repeats in every row or chip and everybody knows the sign: remove (×), the
+    menu with further actions (three dots), open in a new tab. Always with `aria-label` and `title`. Never for the
+    primary action, for anything that deletes or writes to a device, or for something only RelayRoster has.
+  - One icon has one meaning. A button that leads to a page carries the name and the icon of that page in the
+    navigation. Icons come from Tabler Icons (outline), as inline SVG with `class="icon"`; `…` after the text
+    only when a dialog follows.
 - **Product name**: in any text a user reads (UI, docs, messages, page titles) write **RelayRoster**. Lowercase
   `relayroster` only for technical identifiers: image name, file names (`relayroster-backup.zip`), cookies,
   headers, localStorage keys, database file.

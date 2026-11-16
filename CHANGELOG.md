@@ -6,7 +6,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 - Device list: search, type and status stay in the filter bar; the filters for address, findings, firmware,
-  password and radio stack open with "Filters", which shows how many of them are set
+  password and radio stack open with "Filters", which shows how many of them are set. The button to change a
+  setting on the devices shown is called "Bulk change", like the page it opens, and carries its icon
 
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
