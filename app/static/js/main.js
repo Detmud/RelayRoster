@@ -119,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   }));
   const resetFilters = () => setView({ ...VIEW_DEFAULT, sort: view.sort, dir: view.dir });
+  $("#devMoreBtn").addEventListener("click", toggleMoreFilters);
   $("#devReset").addEventListener("click", resetFilters);
   $("#devReset2").addEventListener("click", resetFilters);
   $$("#driftChips .btn").forEach((c) => c.addEventListener("click", () => {

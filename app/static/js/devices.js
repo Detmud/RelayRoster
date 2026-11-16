@@ -131,6 +131,26 @@ function syncViewControls() {
     el.classList.toggle("rr-active", !!view[k]);
   }
   $$("#devTable .table-sort").forEach((b) => sortMark(b.closest("th"), b.dataset.sort === view.sort ? view.dir : ""));
+  syncMoreFilters();
+}
+
+// Search, type and status are always visible; the other filters sit in a second row behind "Filters".
+// While that row is closed the button shows how many of its filters are set.
+let devMoreOpen = false;
+try { devMoreOpen = localStorage.getItem("relayroster.devmore") === "1"; } catch { /* ignore */ }
+function syncMoreFilters() {
+  const set = [...$$("#devMore select")].filter((el) => el.value).length;
+  const btn = $("#devMoreBtn"), cnt = $("#devMoreCount");
+  show($("#devMore"), devMoreOpen);
+  btn.setAttribute("aria-expanded", String(devMoreOpen));
+  btn.classList.toggle("active", devMoreOpen);
+  cnt.textContent = set;
+  show(cnt, set > 0 && !devMoreOpen);
+}
+function toggleMoreFilters() {
+  devMoreOpen = !devMoreOpen;
+  try { localStorage.setItem("relayroster.devmore", devMoreOpen ? "1" : "0"); } catch { /* ignore */ }
+  syncMoreFilters();
 }
 
 function fillTypeFilter() {
