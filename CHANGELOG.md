@@ -5,6 +5,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Device overview: the policy profiles of a device are a card of their own (one row per profile, with where it
+  applies from, "Remove" and "Add to profile") instead of chips and a select inside the device data. The four
+  cards are of similar length; the empty "Profile" field is gone and is called "Device mode" where a device has one
+
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
