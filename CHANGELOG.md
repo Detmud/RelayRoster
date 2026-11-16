@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- Dashboard: the tile "Peer differences" says "All consistent" at 0, in line with the other tiles
+
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
