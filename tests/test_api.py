@@ -409,6 +409,10 @@ def test_address_change_job():
             assert {d["target"] for d in pv.values()} == {"192.168.200.30", "192.168.200.31", "192.168.200.32"}
             assert pv[a]["error"] is None and (pv[a]["netmask"], pv[a]["gw"], pv[a]["source"]) == (
                 "255.255.255.0", "192.168.200.1", "policy")
+            # Asked for by ID: listed whatever its block, suggested address is its current one
+            one = c.post("/api/address/preview", json={"device_ids": ["shellyplus1-441793000301"]}, headers=H).json()
+            assert [(d["device_id"], d["target"], d["block"]) for d in one["devices"]] == [
+                ("shellyplus1-441793000301", "192.168.10.41", None)] and "network.subnet" in one["devices"][0]["error"]
             items = [{"device_id": a, "ip": "192.168.200.30"}, {"device_id": b, "ip": "192.168.200.31"},
                      {"device_id": cdev, "ip": "192.168.200.32"}]
             assert c.post("/api/address/apply", json={"items": items}).status_code == 403, "CSRF"
@@ -426,6 +430,17 @@ def test_address_change_job():
                 _time.sleep(0.01)
             rows = {d["id"]: d for d in c.get("/api/overview").json()["devices"]}
             audit = c.get("/api/audit?action=address").json()["entries"]
+            # Keeping the current address: no probe (the device itself answers there), set static in place
+            fleet.devices["192.168.200.30"].config_writes.clear()
+            assert c.post("/api/address/apply", json={"items": [{"device_id": a, "ip": "192.168.200.30"}]},
+                          headers=H).status_code == 202
+            for _ in range(500):
+                again = c.get("/api/address/job").json()["job"]
+                if not again["running"]:
+                    break
+                _time.sleep(0.01)
+        assert again["items"][0]["status"] == "done", again
+        assert fleet.devices["192.168.200.30"].config_writes[-1][1]["config"]["sta"]["ip"] == "192.168.200.30"
         res = {it["device_id"]: it for it in job["items"]}
         assert res[a]["status"] == "done" and (res[a]["old"], res[a]["new"]) == ("192.168.10.21", "192.168.200.30"), res[a]
         moved = fleet.devices["192.168.200.30"]

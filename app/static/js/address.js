@@ -38,7 +38,8 @@ function renderAddrJobBar(job) {
   $("#addrJobShow").addEventListener("click", openAddrJob);
 }
 
-// deviceId: only this device; empty: every device outside its block
+// deviceId: only this device, whatever its block (its current address keeps it in place, DHCP -> static);
+// empty: every device outside its block
 async function openAddrDialog(deviceId) {
   $("#addrBody").innerHTML = `<p class="text-secondary mb-0">Building the preview…</p>`;
   $("#addrSummary").textContent = "";
@@ -49,13 +50,13 @@ async function openAddrDialog(deviceId) {
   try {
     const { body } = await api("api/address/preview", { method: "POST", json: deviceId ? { device_ids: [deviceId] } : {} });
     if (body.errors?.length) throw new Error(body.errors.join(" · "));
-    renderAddrPreview(body.devices);
+    renderAddrPreview(body.devices, !!deviceId);
   } catch (e) {
     $("#addrBody").innerHTML = `<div class="alert alert-danger mb-0">${esc(e.message)}</div>`;
   }
 }
 
-function renderAddrPreview(rows) {
+function renderAddrPreview(rows, single = false) {
   if (!rows.length) { $("#addrBody").innerHTML = `<p class="text-secondary mb-0">Every device with an address block is inside its block.</p>`; return; }
   $("#addrBody").innerHTML = `
     ${allowAddress ? "" : `<div class="alert alert-warning">Writing is turned off. Turn on “Allow address changes” in <a href="#settings">Settings</a>; the preview works without it.</div>`}
@@ -67,7 +68,7 @@ function renderAddrPreview(rows) {
         <th>Device</th><th data-type="ip">Current</th><th>New address</th><th>Network</th></tr></thead>
       <tbody>${rows.map((r) => `<tr data-addr="${esc(r.device_id)}">
         <td><input class="form-check-input" type="checkbox"${r.error ? " disabled" : " checked"} aria-label="Select ${esc(r.name || r.device_id)}"></td>
-        <td>${esc(r.name || "(no name)")}<span class="rr-sub">${esc(r.model_name)} · block ${esc(r.block)}</span></td>
+        <td>${esc(r.name || "(no name)")}<span class="rr-sub">${esc(r.model_name)}${r.block ? ` · block ${esc(r.block)}` : ""}</span></td>
         <td class="font-monospace small">${esc(r.host)}</td>
         <td><input class="form-control form-control-sm font-monospace rr-addr-input" value="${esc(r.target || "")}" inputmode="decimal" autocomplete="off"
           aria-label="New address of ${esc(r.name || r.device_id)}"${r.error ? " disabled" : ""}></td>
@@ -85,7 +86,7 @@ function renderAddrPreview(rows) {
   $("#addrAll").addEventListener("change", (ev) => { boxes().forEach((b) => { if (!b.disabled) b.checked = ev.target.checked; }); update(); });
   boxes().forEach((b) => b.addEventListener("change", update));
   show($("#addrStart"), true);
-  $("#addrSummary").textContent = `${plural(rows.length, "device")} outside its block`;
+  $("#addrSummary").textContent = single ? "Keep the current address to switch from DHCP to static" : `${plural(rows.length, "device")} outside its block`;
   update();
 }
 

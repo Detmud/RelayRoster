@@ -4,7 +4,8 @@ RelayRoster sets the address on the device itself (`WiFi.SetConfig` / `Eth.SetCo
 not as a DHCP reservation: routers offer no common API for reservations.
 
 Flow per device:
-1. The target address must be free: no known device uses it and nothing answers on `/shelly` there
+1. The target address must be free: no known device uses it and nothing answers on `/shelly` there. The
+   device's current address is allowed too: that switches it from DHCP to a static address in place
 2. Check identity at the current address, read status and configuration, skip moving shutters
 3. Netmask, gateway and DNS server come from the device's own static configuration; a device on DHCP has none,
    then `network.gateway`, `network.nameserver` and the matching `network.subnet` from the policy are used.
@@ -170,9 +171,7 @@ class AddressMover:
                 raise ValueError(f"{dev.get('name') or dev_id}: '{target}' is not an IPv4 address")
             if _ip(dev["host"]) is None:
                 raise ValueError(f"{dev.get('name') or dev_id}: is reached by host name, not by address")
-            if target == dev["host"]:
-                raise ValueError(f"{dev.get('name') or dev_id}: already has {target}")
-            if target in hosts:
+            if hosts.get(target, dev_id) != dev_id:
                 raise ValueError(f"{dev.get('name') or dev_id}: {target} is the address of {hosts[target]}")
             if any(it.new == target or it.device_id == dev_id for it in items):
                 raise ValueError(f"{dev.get('name') or dev_id}: device or address {target} is listed twice")
@@ -249,11 +248,14 @@ class AddressMover:
 
         async with col._http() as http:
             pw, timeout = col.settings.shelly_password, col.settings.rpc_timeout_s
-            # 1. Nothing may answer at the target address. A device that is switched off is not noticed
-            try:
-                res = await http.get(f"http://{target}/shelly", timeout=self.probe_s)
-            except httpx.HTTPError:
-                res = None
+            # 1. Nothing may answer at the target address. A device that is switched off is not noticed.
+            # Keeping the current address (DHCP -> static) skips this: the device itself answers there
+            res = None
+            if target != item.old:
+                try:
+                    res = await http.get(f"http://{target}/shelly", timeout=self.probe_s)
+                except httpx.HTTPError:
+                    res = None
             if res is not None:
                 raise fail(f"Something already answers at {target} (HTTP {res.status_code}). Address is in use.")
 
