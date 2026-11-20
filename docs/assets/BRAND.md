@@ -19,6 +19,8 @@ The mark combines a rooster (the roster/rooster wordplay), three list-like tail 
 | `app/static/favicon.svg` | Same geometry with the brand accent. Navy on light browser tabs; soft white on dark tabs via `prefers-color-scheme`. |
 | `docs/assets/logo-light.svg` | Horizontal icon and RelayRoster wordmark for light backgrounds. |
 | `docs/assets/logo-dark.svg` | Matching horizontal lockup for dark backgrounds. |
+| `docs/assets/icons/relayroster-icon.svg` | Standalone square mark (24-unit viewBox), navy body and vermilion comb, for light backgrounds. |
+| `docs/assets/icons/relayroster-icon-<size>.png` | The same mark as PNG with transparency in 16, 24, 32, 48, 64, 128, 256, 512 and 1024 px, for places that do not take SVG (app stores, container dashboards, avatars). |
 | `docs/assets/social-preview.png` | 1280 × 640 social card on solid deep navy. The large rooster sits above the wordmark. Both stay inside the central 1200 × 600 safe area. |
 
 All SVGs have a viewBox with no fixed root width or height, embedded images, text elements, fonts, scripts, or external references. Lettering uses custom hand-drawn outlines. Lockups use three paths: body, comb, and wordmark. Scale proportionally and keep clear space around the mark. Use the standalone mark where the wordmark would become too small.
