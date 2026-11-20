@@ -7,9 +7,9 @@ Flow per device:
 1. The target address must be free: no known device uses it and nothing answers on `/shelly` there. The
    device's current address is allowed too: that switches it from DHCP to a static address in place
 2. Check identity at the current address, read status and configuration, skip moving shutters
-3. Netmask, gateway and DNS server come from the device's own static configuration; a device on DHCP has none,
-   then `network.gateway`, `network.nameserver` and the matching `network.subnet` from the policy are used.
-   Nothing is guessed: without these values the device is not moved
+3. Netmask, gateway and DNS server come from `network` in the policy only (see `plan_call`). Nothing is taken
+   from the device or guessed: unless subnet, DHCP pool, gateway, DNS server and the target fit together, the
+   device is not moved
 4. Set the address. The connection dropping right after is expected
 5. Wait for the device at the new address and check its ID; only then store the new address and read it again
 6. If it does not come back: report old and new address. There is no rollback on the device
@@ -55,15 +55,20 @@ def _ip(value: Any) -> ipaddress.IPv4Address | None:
 
 
 def plan_call(config: dict[str, Any] | None, status: dict[str, Any] | None, host: str,
-              network: dict[str, Any] | None, target: str) -> dict[str, Any]:
+              network: dict[str, Any] | None, target: str, block: dict[str, Any] | None = None) -> dict[str, Any]:
     """Interface and values for the static address: {iface, method, netmask, gw, nameserver, source}.
-    Raises AddressError when the device is not reached on its own address or a value is unknown."""
+
+    Netmask, gateway and DNS server come from `network` in the policy only, never from the device or a guess.
+    Raises AddressError unless every value is known and fits: the target is a host address of network.subnet,
+    outside network.dhcp_pool, inside the device's block (if it has one), and neither gateway nor DNS server;
+    the gateway is in the same subnet. Also when the device is not reached on its own address."""
     config, status, network = config or {}, status or {}, network or {}
     wifi, eth = status.get("wifi") or {}, status.get("eth") or {}
     if eth.get("ip") == host:
-        iface, method, cur = "eth", "Eth.SetConfig", config.get("eth") or {}
+        iface, method = "eth", "Eth.SetConfig"
     elif wifi.get("sta_ip") == host:
-        iface, method, cur = "wifi", "WiFi.SetConfig", (config.get("wifi") or {}).get("sta") or {}
+        iface, method = "wifi", "WiFi.SetConfig"
+        cur = (config.get("wifi") or {}).get("sta") or {}
         if wifi.get("ssid") and cur.get("ssid") and wifi["ssid"] != cur["ssid"]:
             raise AddressError(f"Connected to '{wifi['ssid']}', not to its main Wi-Fi '{cur['ssid']}' (fallback network). "
                                "Not moved.")
@@ -74,27 +79,38 @@ def plan_call(config: dict[str, Any] | None, status: dict[str, Any] | None, host
     tgt = _ip(target)
     if tgt is None:
         raise AddressError(f"'{target}' is not an IPv4 address")
-    if cur.get("ipv4mode") == "static" and cur.get("netmask") and cur.get("gw"):
-        netmask, gw, nameserver, source = cur["netmask"], cur["gw"], cur.get("nameserver"), "device"
-    else:
-        gw, nameserver, source = network.get("gateway"), network.get("nameserver"), "policy"
-        subnet = next((n for n in pol._networks(network.get("subnet")) if tgt in n), None)
-        netmask = str(subnet.netmask) if subnet else None
-        missing = [name for name, v in (("network.subnet", netmask), ("network.gateway", gw),
-                                        ("network.nameserver", nameserver)) if not v]
-        if missing:
-            raise AddressError(f"The device uses DHCP, so it has no netmask, gateway and DNS server of its own. "
-                               f"Set {', '.join(missing)} in the policy.")
+    missing = [f"network.{k}" for k in ("subnet", "dhcp_pool", "gateway", "nameserver") if not network.get(k)]
+    if missing:
+        raise AddressError(f"Set {', '.join(missing)} in the policy. RelayRoster writes a static address only with "
+                           "netmask, gateway, DNS server and DHCP pool from there.")
     try:
-        net = ipaddress.IPv4Network(f"{gw}/{netmask}", strict=False)
-    except ValueError:
-        raise AddressError(f"Gateway {gw} with netmask {netmask} is not a valid network") from None
-    if tgt not in net:
-        raise AddressError(f"{target} is not in the network of the gateway ({net})")
-    if str(tgt) == str(gw):
+        subnets, pools = pol._networks(network["subnet"]), pol._networks(network["dhcp_pool"])
+    except ValueError as exc:
+        raise AddressError(f"Policy: {exc}") from None
+    gw, nameserver = _ip(network["gateway"]), _ip(network["nameserver"])
+    if gw is None or nameserver is None:
+        raise AddressError("Policy: network.gateway and network.nameserver must be IPv4 addresses")
+    subnet = next((n for n in subnets if tgt in n), None)
+    if subnet is None:
+        raise AddressError(f"{target} is not in network.subnet ({', '.join(str(n) for n in subnets)})")
+    if gw not in subnet:
+        raise AddressError(f"Gateway {gw} is not in {subnet}, the subnet of {target}")
+    if tgt in (subnet.network_address, subnet.broadcast_address):
+        raise AddressError(f"{target} is the {'network' if tgt == subnet.network_address else 'broadcast'} address "
+                           f"of {subnet}")
+    if tgt == gw:
         raise AddressError(f"{target} is the gateway")
-    return {"iface": iface, "method": method, "netmask": str(netmask), "gw": str(gw),
-            "nameserver": str(nameserver) if nameserver else None, "source": source}
+    if tgt == nameserver:
+        raise AddressError(f"{target} is the DNS server")
+    pool = next((p for p in pools if tgt in p), None)
+    if pool is not None:
+        raise AddressError(f"{target} is in the DHCP pool {pool}; the router could hand it to another device")
+    if block:
+        first, last = pol.parse_range(block["range"])
+        if not first <= tgt <= last:
+            raise AddressError(f"{target} is not in block '{block.get('name') or block['range']}' ({block['range']})")
+    return {"iface": iface, "method": method, "netmask": str(subnet.netmask), "gw": str(gw),
+            "nameserver": str(nameserver), "source": "policy"}
 
 
 @dataclass
@@ -243,7 +259,7 @@ class AddressMover:
         policy_data = None
         try:
             policy_data = pol.load(col.settings.policy_path)
-        except Exception as exc:   # an invalid policy only matters for a device on DHCP, plan_call says so
+        except Exception as exc:   # plan_call then names the missing network values
             log.info("Address change: policy not usable (%s)", exc)
 
         async with col._http() as http:
@@ -279,7 +295,8 @@ class AddressMover:
 
             # 3. Values for the call
             try:
-                call = plan_call(config, status, item.old, (policy_data or {}).get("network"), target)
+                call = plan_call(config, status, item.old, (policy_data or {}).get("network"), target,
+                                 pol.address_block(policy_data or {}, dev))
             except AddressError as exc:
                 raise fail(str(exc)) from None
             if not col.supports(item.device_id, call["method"]):

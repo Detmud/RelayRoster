@@ -6,9 +6,13 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 - Device settings: **"Static address…" in the Wi-Fi and Ethernet cards** opens the address change for this
-  device, also when it is inside its block or has none. The suggested address is the current one, which switches
-  the device from DHCP to a static address in place; any other address can be typed in. Netmask, gateway and DNS
-  server come from the device's static configuration or, on DHCP, from `network` in the policy
+  device, also when it is inside its block or has none. Suggested is the next free address of its block, else
+  the current one (DHCP -> static in place). A typed address is checked again right away
+- **Static addresses only with values from the policy.** Netmask, gateway and DNS server always come from
+  `network` in the policy, no longer from the device's own static configuration. The address is written only when
+  `subnet`, `dhcp_pool`, `gateway` and `nameserver` are all set and the address is a host address of the subnet,
+  outside the DHCP pool, inside the device's block and neither gateway nor DNS server. Saving the policy reports a
+  gateway outside the subnet and blocks that overlap the DHCP pool or contain the gateway or DNS server
 - Device settings: "Enabled" is the first row of every component. Wi-Fi lists the station first (enabled, SSID,
   IPv4 mode), then the fallback network, the access point and roaming
 - **Policy and Profiles are one page.** "Policy" has the tabs Rules, Overrides and YAML. Rules lists the baseline

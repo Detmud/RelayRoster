@@ -382,13 +382,28 @@ def test_address_change_job():
     assert not is_address_call("WiFi.SetConfig", {"config": {"sta": {**sta, "ipv4mode": "dhcp"}}})
     assert not is_address_call("WiFi.SetConfig", {"config": {"sta": {**sta, "ip": "10.0.0.999"}}})
     assert not is_address_call("WiFi.SetConfig", {"config": {"sta1": sta}}) and not is_address_call("Sys.SetConfig", {"config": sta})
-    # A device with a static address keeps its own netmask, gateway and DNS server; on DHCP the policy has to say
-    own = address.plan_call({"wifi": {"sta": {**sta, "ssid": "IoT"}}}, {"wifi": {"sta_ip": "10.0.0.5", "ssid": "IoT"}},
-                            "10.0.0.5", None, "10.0.0.9")
-    assert (own["method"], own["gw"], own["source"]) == ("WiFi.SetConfig", "10.0.0.1", "device")
-    for args, word in ((({}, {"wifi": {"sta_ip": "10.0.0.5"}}, "10.0.0.5", None, "10.0.0.9"), "network.gateway"),
-                       (({}, {"wifi": {"sta_ip": "172.16.0.5"}}, "10.0.0.5", None, "10.0.0.9"), "reports 172.16.0.5"),
-                       (({"wifi": {"sta": sta}}, {"wifi": {"sta_ip": "10.0.0.5"}}, "10.0.0.5", None, "10.9.9.9"), "not in the network")):
+    # Netmask, gateway and DNS server only from the policy, also when the device has static values of its own
+    net = {"subnet": "10.0.0.0/24", "dhcp_pool": "10.0.0.100/27", "gateway": "10.0.0.1", "nameserver": "10.0.0.2"}
+    st = {"wifi": {"sta_ip": "10.0.0.5", "ssid": "IoT"}}
+    blk = {"name": "i4", "range": "10.0.0.30-39"}
+    own = address.plan_call({"wifi": {"sta": {**sta, "ssid": "IoT", "gw": "10.0.0.254"}}}, st, "10.0.0.5", net, "10.0.0.31", blk)
+    assert (own["method"], own["netmask"], own["gw"], own["nameserver"], own["source"]) == (
+        "WiFi.SetConfig", "255.255.255.0", "10.0.0.1", "10.0.0.2", "policy")
+    bad = [((None, "10.0.0.9"), "network.subnet, network.dhcp_pool, network.gateway, network.nameserver"),
+           (({**net, "dhcp_pool": None}, "10.0.0.9"), "network.dhcp_pool"),
+           ((net, "10.9.9.9"), "not in network.subnet"),
+           (({**net, "gateway": "10.0.1.1"}, "10.0.0.9"), "not in 10.0.0.0/24"),
+           ((net, "10.0.0.0"), "network address"), ((net, "10.0.0.255"), "broadcast address"),
+           ((net, "10.0.0.1"), "is the gateway"), ((net, "10.0.0.2"), "is the DNS server"),
+           ((net, "10.0.0.101"), "DHCP pool"), ((net, "nonsense"), "not an IPv4 address")]
+    for (network, target), word in bad:
+        try:
+            address.plan_call({}, st, "10.0.0.5", network, target)
+            raise AssertionError(word)
+        except address.AddressError as exc:
+            assert word in str(exc), exc
+    for args, word in ((({}, {"wifi": {"sta_ip": "172.16.0.5"}}, "10.0.0.5", net, "10.0.0.9"), "reports 172.16.0.5"),
+                       (({}, st, "10.0.0.5", net, "10.0.0.9", blk), "not in block 'i4'")):
         try:
             address.plan_call(*args)
             raise AssertionError(word)
@@ -409,10 +424,14 @@ def test_address_change_job():
             assert {d["target"] for d in pv.values()} == {"192.168.200.30", "192.168.200.31", "192.168.200.32"}
             assert pv[a]["error"] is None and (pv[a]["netmask"], pv[a]["gw"], pv[a]["source"]) == (
                 "255.255.255.0", "192.168.200.1", "policy")
-            # Asked for by ID: listed whatever its block, suggested address is its current one
+            # Asked for by ID: listed whatever its block, suggested address is its current one; a typed address
+            # is checked instead, against the same rules as the job
+            typed = c.post("/api/address/preview", json={"device_ids": [a], "targets": {a: "192.168.200.40"}},
+                           headers=H).json()["devices"][0]
+            assert typed["target"] == "192.168.200.40" and "not in block 'i4'" in typed["error"], typed
             one = c.post("/api/address/preview", json={"device_ids": ["shellyplus1-441793000301"]}, headers=H).json()
             assert [(d["device_id"], d["target"], d["block"]) for d in one["devices"]] == [
-                ("shellyplus1-441793000301", "192.168.10.41", None)] and "network.subnet" in one["devices"][0]["error"]
+                ("shellyplus1-441793000301", "192.168.10.41", None)] and "not in network.subnet" in one["devices"][0]["error"]
             items = [{"device_id": a, "ip": "192.168.200.30"}, {"device_id": b, "ip": "192.168.200.31"},
                      {"device_id": cdev, "ip": "192.168.200.32"}]
             assert c.post("/api/address/apply", json={"items": items}).status_code == 403, "CSRF"

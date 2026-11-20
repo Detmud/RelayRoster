@@ -44,8 +44,11 @@ read, reads the device back, stores a snapshot and writes the audit log (page Ac
 - **Apply address plan**: gives devices that are not in their address block (`network` in the policy) the next free
   address of the block as a **static address on the device**, not as a reservation in the router. Per device:
   nothing may answer at the new address, then the address is set, RelayRoster waits for the device there (90 s)
-  and compares its ID. Netmask, gateway and DNS server come from the device's static configuration; a device on
-  DHCP has none, then `network.gateway`, `network.nameserver` and `network.subnet` from the policy are used. One
+  and compares its ID. Netmask, gateway and DNS server come from `network` in the policy only, never from the
+  device. The address is set only when `subnet`, `dhcp_pool`, `gateway` and `nameserver` are all set and the new
+  address is a host address of the subnet, outside the DHCP pool, inside the device's block and neither gateway
+  nor DNS server; the gateway has to be in the same subnet. "Static address…" in the Wi-Fi and Ethernet cards of a
+  device does the same for that one device; its current address can be kept if it fits these rules. One
   device after another, never next to a firmware or apply job; moving shutters are skipped. There is no rollback:
   a device that does not come back is reported with both addresses. Everything that addresses the device by IP
   needs the new address afterwards.

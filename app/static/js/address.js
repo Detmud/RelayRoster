@@ -56,6 +56,11 @@ async function openAddrDialog(deviceId) {
   }
 }
 
+// Values the call would write, all from network in the policy, or why the address cannot be set
+const addrNet = (r) => (r.error ? `<span class="text-red small">${esc(r.error)}</span>`
+  : `<span class="small">${esc(r.iface === "eth" ? "Ethernet" : "Wi-Fi")} · mask ${esc(r.netmask)} · gateway ${esc(r.gw)} · DNS ${esc(r.nameserver)}</span>
+     <span class="rr-sub">from network in the policy</span>`);
+
 function renderAddrPreview(rows, single = false) {
   if (!rows.length) { $("#addrBody").innerHTML = `<p class="text-secondary mb-0">Every device with an address block is inside its block.</p>`; return; }
   $("#addrBody").innerHTML = `
@@ -71,10 +76,8 @@ function renderAddrPreview(rows, single = false) {
         <td>${esc(r.name || "(no name)")}<span class="rr-sub">${esc(r.model_name)}${r.block ? ` · block ${esc(r.block)}` : ""}</span></td>
         <td class="font-monospace small">${esc(r.host)}</td>
         <td><input class="form-control form-control-sm font-monospace rr-addr-input" value="${esc(r.target || "")}" inputmode="decimal" autocomplete="off"
-          aria-label="New address of ${esc(r.name || r.device_id)}"${r.error ? " disabled" : ""}></td>
-        <td>${r.error ? `<span class="text-red small">${esc(r.error)}</span>`
-          : `<span class="small">${esc(r.iface === "eth" ? "Ethernet" : "Wi-Fi")} · mask ${esc(r.netmask)} · gateway ${esc(r.gw)} · DNS ${esc(r.nameserver || "none")}</span>
-             <span class="rr-sub">${r.source === "device" ? "from the device's static configuration" : "from network in the policy (device uses DHCP)"}</span>`}</td></tr>`).join("")}</tbody></table></div></div>
+          aria-label="New address of ${esc(r.name || r.device_id)}"></td>
+        <td class="rr-addr-net">${addrNet(r)}</td></tr>`).join("")}</tbody></table></div></div>
     <p class="text-secondary small mt-3 mb-0">One device after another. RelayRoster checks that nothing answers at the new address, sets it, waits for the device there and compares its ID. Moving shutters are skipped.</p>`;
   const boxes = () => $$("tbody input[type=checkbox]", $("#addrBody"));
   const update = () => {
@@ -85,8 +88,25 @@ function renderAddrPreview(rows, single = false) {
   };
   $("#addrAll").addEventListener("change", (ev) => { boxes().forEach((b) => { if (!b.disabled) b.checked = ev.target.checked; }); update(); });
   boxes().forEach((b) => b.addEventListener("change", update));
+  // A typed address is checked by the server against the same rules as the job; until then it cannot be selected
+  $$(".rr-addr-input", $("#addrBody")).forEach((inp) => inp.addEventListener("change", async () => {
+    const tr = inp.closest("tr"), box = $("input[type=checkbox]", tr), id = tr.dataset.addr;
+    box.checked = false; box.disabled = true; update();
+    $(".rr-addr-net", tr).innerHTML = `<span class="text-secondary small">Checking…</span>`;
+    try {
+      const { body } = await api("api/address/preview", { method: "POST", json: { device_ids: [id], targets: { [id]: inp.value.trim() } } });
+      const r = body.devices?.[0];
+      if (!r) throw new Error((body.errors || []).join(" · ") || "Device not found");
+      if (inp.value.trim() !== r.target) return;   // typed on meanwhile, the next check answers
+      $(".rr-addr-net", tr).innerHTML = addrNet(r);
+      box.disabled = !!r.error; box.checked = !r.error;
+    } catch (e) {
+      $(".rr-addr-net", tr).innerHTML = `<span class="text-red small">${esc(e.message)}</span>`;
+    }
+    update();
+  }));
   show($("#addrStart"), true);
-  $("#addrSummary").textContent = single ? "Keep the current address to switch from DHCP to static" : `${plural(rows.length, "device")} outside its block`;
+  $("#addrSummary").textContent = single ? "Only addresses that fit network in the policy can be set" : `${plural(rows.length, "device")} outside its block`;
   update();
 }
 
