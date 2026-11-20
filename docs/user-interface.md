@@ -11,9 +11,8 @@
 | Peer comparison | Devices of the same type compared with each other, **without** any policy. Shows every effective setting that is not the same on all of them and marks the outliers |
 | Firmware | Installed version per type, mixed versions, stable and beta updates reported by the devices; update per device, per type or all |
 | Backups | Versioned snapshots per device (configuration, scripts with code, schedules, webhooks, KVS), diff to the previous one, download as JSON or everything as ZIP, restore |
-| Profiles | Create, edit, order and delete profiles without YAML, with live preview; apply a profile to its devices |
 | Bulk change | One setting for many devices at once (e.g. the NTP server for all devices), restart several devices, roll out a device password |
-| Policy | Editor for `policy.yaml` with validation before saving |
+| Policy | `#policy`: **Rules** edits the baseline and creates, edits, orders and deletes profiles without YAML, with live preview, and applies a profile to its devices; **Overrides** lists the device overrides; **YAML** is the editor for the whole `policy.yaml` with validation before saving |
 | Activity | Everything RelayRoster wrote (the audit log), exportable as CSV; `#audit` still opens it |
 | Settings | Networks, intervals, timeouts, device password and the write switches; stored in `/data`, effective immediately |
 

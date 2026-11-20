@@ -12,10 +12,9 @@ const PAGES = {
   peers: { pre: "Checks", title: "Peer comparison", sub: "Device types whose devices differ from each other, without any policy. Highlighted values differ from the majority. Settings without effect (e.g. <code>cloud.server</code> with cloud off) do not count, see <code>peer_depends</code>. Device-specific paths are listed under <code>peer_ignore</code>; paths in <code>ignore</code> of a profile or override do not count for its devices." },
   firmware: { pre: "Checks", title: "Firmware", sub: "Installed version per device, grouped by type. \"Stable available\" is reported by the device itself." },
   backups: { pre: "Tools", title: "Backups", sub: "RelayRoster stores a snapshot on every change: configuration, scripts with code, schedules, webhooks and KVS. A firmware update alone does not count as a change." },
-  profiles: { pre: "Target state", title: "Profiles", sync: false, sub: "Target values per function, e.g. all roller shutters, stored in <code>/data/policy.yaml</code> with comments kept. Nothing here is written to a device." },
   activity: { pre: "System", title: "Activity", sync: false, sub: "Everything RelayRoster wrote: names, firmware, restarts, settings, passwords, plus changes to Settings and the policy. Newest first." },
   bulk: { pre: "Tools", title: "Bulk change", sub: "Set one setting on many devices at once, e.g. the NTP server for all devices. Preview first; devices without the setting are left alone." },
-  policy: { pre: "Target state", title: "Policy", sync: false, sub: "The target state for all devices, stored in <code>/data/policy.yaml</code>. Changes here only affect the comparison, never a device." },
+  policy: { pre: "Target state", title: "Policy", sync: false, sub: "The target state for all devices: a baseline, profiles per function and overrides per device, stored in <code>/data/policy.yaml</code> with comments kept. Changes here only affect the comparison, never a device." },
   settings: { pre: "System", title: "Settings", sync: false, sub: "Stored in <code>/data</code> and applied immediately, no restart. Environment variables only provide the defaults." },
 };
 let currentPage = null;
@@ -35,12 +34,13 @@ function showPage(name, push = false) {
   });
   $$(".rr-tab").forEach((el) => show(el, el.id === `tab-${name}`));
   $("#syncBtn").title = name === "device" ? "Read this device now" : "Read all known devices now";
-  $$("[data-actions]").forEach((el) => show(el, el.dataset.actions === name));
+  const polView = name === "policy" ? polRoute().view : null;
+  $$("[data-actions]").forEach((el) => show(el, el.dataset.actions === name && (!el.dataset.polView || el.dataset.polView === polView)));
   $$("#syncGroup, .rr-syncinfo").forEach((el) => show(el, p.sync !== false));
   if (name === "device") {
     showDevice(devRoute()).catch((e) => showError(e.message));
-  } else if (name === "profiles") {
-    showProfiles().catch((e) => showError(e.message));
+  } else if (name === "policy") {
+    showPolicy().catch((e) => showError(e.message));
   } else {
     if (name === "bulk") showBulk().catch((e) => showError(e.message));
     if (name === "activity") showAudit().catch((e) => showError(e.message));
@@ -49,9 +49,8 @@ function showPage(name, push = false) {
     $("#pageSub").innerHTML = p.sub;
     document.title = `${p.title} · RelayRoster`;
   }
-  if (name === "policy" && !policyLoaded) loadPolicy().catch((e) => showError(e.message));
   if (name === "settings" && !settingsLoaded) loadSettings().catch((e) => showError(e.message));
-  const hash = name === "devices" ? viewToHash() : name === "device" || (name === "profiles" && location.hash.startsWith("#profiles"))
+  const hash = name === "devices" ? viewToHash() : name === "device" || (name === "policy" && location.hash.startsWith("#policy/"))
     ? location.hash : `#${name}`;
   if (location.hash !== hash) history[push ? "pushState" : "replaceState"](null, "", hash);
   if (changed && push) window.scrollTo(0, 0);
@@ -59,6 +58,7 @@ function showPage(name, push = false) {
 }
 
 const pageFromHash = () => {
+  legacyPolicyHash();
   let name = location.hash.slice(1).split("?")[0].split("/")[0];
   if (name === "audit") name = "activity";   // old name of the page, links keep working
   if (name === "device") return devRoute() ? "device" : null;
@@ -86,8 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $$("a[data-page]").forEach((a) => a.addEventListener("click", (ev) => {
     if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;  // neuer Tab: Browser machen lassen
     ev.preventDefault();
-    // Profiles in the menu: always the list, also from an open profile
-    if (a.dataset.page === "profiles" && location.hash !== "#profiles") { history.pushState(null, "", "#profiles"); prof.edit = null; }
+    // Policy in the menu: always the rules list, also from an open profile or the YAML editor
+    if (a.dataset.page === "policy" && location.hash !== "#policy") { history.pushState(null, "", "#policy"); prof.edit = null; }
     showPage(a.dataset.page, true);
   }));
   $("#navToggle").addEventListener("click", () => setNav(!$("#sidebarMenu").classList.contains("show")));

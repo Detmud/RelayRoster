@@ -11,6 +11,9 @@ _COMPONENT = re.compile(r"^([a-z0-9_]+):\d+(?=\.|$)")
 MAX_PATHS = 2000
 
 
+BASELINE = "\0baseline"   # key in summary(), cannot clash with a profile name
+
+
 def generalize(path: str) -> str:
     """cover:0.power_limit -> cover:*.power_limit (suggestion with wildcard per component)."""
     return _COMPONENT.sub(r"\1:*", path)
@@ -52,14 +55,19 @@ def summary(policy_data: dict[str, Any] | None, devices: list[dict[str, Any]],
         ids = [d["id"] for d in devices if pol.profile_applies(prof, d)]
         src = f"Profile: {name}"
         out[name] = {"devices": ids, "findings": sum(1 for f in findings if f.get("source") == src)}
+    out[BASELINE] = {"devices": [d["id"] for d in devices],
+                     "findings": sum(1 for f in findings if f.get("source") == "Baseline")}
     return out
 
 
 def preview(policy_data: dict[str, Any], prof: dict[str, Any], devices: list[dict[str, Any]],
-            configs: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    """Matching devices, actual value per rule and device, and the deviations this profile creates."""
-    matched = [d for d in devices if pol.profile_applies(prof, d)]
-    src = f"Profile: {prof['name']}"
+            configs: dict[str, dict[str, Any]], baseline: bool = False) -> dict[str, Any]:
+    """Matching devices, actual value per rule and device, and the deviations this profile creates.
+
+    baseline: prof is the baseline ({settings}), it applies to every device.
+    """
+    matched = list(devices) if baseline else [d for d in devices if pol.profile_applies(prof, d)]
+    src = "Baseline" if baseline else f"Profile: {prof['name']}"
     rules = []
     for pattern, expected in (prof.get("settings") or {}).items():
         per_dev = []
