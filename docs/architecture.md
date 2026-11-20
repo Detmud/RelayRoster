@@ -19,7 +19,7 @@ app/
   store.py             SQLite: devices, snapshots, audit, meta
   policy.py            Parse and validate the policy, evaluate rules, address plan, naming plan
   policy_edit.py       Change profiles and overrides in policy.yaml (ruamel.yaml round trip, backups)
-  profiles_view.py     Profiles page: counters, suggestions, live preview
+  profiles_view.py     Policy page (baseline, profiles): counters, suggestions, live preview
   compare.py           Path matching, diffs, peer groups (peer_depends, READ_ONLY_PATHS, MANAGED_PATHS), versions
   devicepage.py        Device page: schema per component (type, unit, options), settings view, peer outliers
   report.py            Overview for the UI (findings, firmware), classifying missing settings

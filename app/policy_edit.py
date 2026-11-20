@@ -720,6 +720,49 @@ def set_baseline(doc: Any, path: str, value: Any, comment: str) -> None:
     _rebuild(base, entries)
 
 
+def check_rules(rules: Any) -> tuple[list[dict[str, Any]], list[str]]:
+    """Check a list of rules {path, op, value, comment} (baseline editor)."""
+    p, errs = _check_profile({"name": "x", "match": {"id": "x"}, "settings": rules})
+    return p.get("settings") or [], errs
+
+
+def baseline_json(doc: Any) -> list[dict[str, Any]]:
+    """Baseline rules as {path, op, value, comment}, in file order."""
+    return profile_json({"settings": doc.get("baseline") if isinstance(doc, dict) else None})["settings"]
+
+
+def list_overrides(doc: Any) -> list[dict[str, Any]]:
+    """Device overrides as [{id, settings: [rules], ignore}], in file order."""
+    ov = doc.get("overrides") if isinstance(doc, dict) else None
+    out = []
+    for dev_id, entry in (ov or {}).items():
+        entry = entry if isinstance(entry, dict) else {}
+        out.append({"id": str(dev_id), "settings": profile_json(entry)["settings"],
+                    "ignore": [str(i) for i in (entry.get("ignore") or [])]})
+    return out
+
+
+def set_baseline_rules(doc: Any, rules: Any) -> None:
+    """Replace all baseline rules. Comments and order of unchanged rules stay."""
+    clean, errs = check_rules(rules)
+    if errs:
+        raise EditError(errs, 422)
+    base = _rule_map(doc, "baseline", create=bool(clean))
+    if base is None:
+        return
+    _apply_settings(base, clean)
+
+
+def preview_baseline(policy_data: dict[str, Any], rules: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Policy (already checked, as dict) with the baseline replaced, without a file."""
+    clean, errs = check_rules(rules)
+    if errs:
+        raise EditError(errs)
+    data = copy.deepcopy(policy_data)
+    data["baseline"] = {r["path"]: value_from_rule(r) for r in clean}
+    return data, {"name": "Baseline", "settings": data["baseline"]}
+
+
 def remove_rule(doc: Any, source: str, path: str, device_id: str | None = None) -> None:
     """Removes a rule (outdated rules). source as in the findings: Baseline, Profile: <name>, Override."""
     if source == "Baseline":

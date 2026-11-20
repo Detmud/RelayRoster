@@ -178,15 +178,68 @@ def test_policy_backups_are_limited():
         assert len(backups) == 20
 
 
-def test_profiles_page_assets():
-    """Profiles page in sidebar, page header and app.js."""
+def test_baseline_api():
+    """Baseline without YAML: listed with devices and findings, preview changes nothing, saving keeps the
+    comments of unchanged rules and the commented-out lines, invalid rules change nothing."""
+    with tempfile.TemporaryDirectory() as tmp:
+        _, app, c = setup(tmp)
+        path = app.state.settings.policy_path
+        orig = open(path, encoding="utf-8").read()
+        body = c.get("/api/profiles").json()
+        base = body["baseline"]
+        assert [r["path"] for r in base["settings"]] == ["sys.location.tz", "sys.location.lat", "sys.location.lon",
+                                                         "wifi.ap.enable"]
+        assert base["settings"][3] == {"path": "wifi.ap.enable", "op": "=", "value": False,
+                                       "comment": "device hotspot off once the device is on Wi-Fi"}
+        assert len(base["devices"]) == len(body["devices"]) and "findings" in base
+        assert body["overrides"] == []
+
+        rules = base["settings"] + [{"path": "sys.sntp.server", "op": "=", "value": "router.lan", "comment": "local"}]
+        assert c.post("/api/baseline/preview", json={"settings": rules}).status_code == 403, "CSRF"
+        r = c.post("/api/baseline/preview", json={"settings": rules}, headers=H)
+        assert r.status_code == 200, r.text
+        pv = r.json()
+        assert len(pv["devices"]) == len(body["devices"])
+        assert any(f["path"] == "sys.sntp.server" and f["source"] == "Baseline" for f in pv["findings"])
+        assert open(path, encoding="utf-8").read() == orig
+
+        bad = [*rules, {"path": "sys.sntp.server", "op": "=", "value": "x", "comment": ""}]
+        r = c.put("/api/baseline", json={"settings": bad}, headers=H)
+        assert r.status_code == 422 and "appears twice" in r.json()["errors"][0]
+        assert open(path, encoding="utf-8").read() == orig
+
+        rules[0] = {**rules[0], "value": "Europe/Vienna"}
+        r = c.put("/api/baseline", json={"settings": rules[:3] + rules[4:]}, headers=H)   # wifi.ap.enable removed
+        assert r.status_code == 200, r.text
+        text = open(path, encoding="utf-8").read()
+        assert "sys.location.tz: Europe/Vienna" in text and "wifi.ap.enable: false" not in text
+        assert "sys.location.lat: 52.410801     # site location for sunrise/sunset schedules" in text
+        assert "sys.sntp.server: router.lan     # local" in text and "# cloud.enable: false" in text
+        assert pol.parse(text)["baseline"]["sys.sntp.server"] == "router.lan"
+        assert [r["path"] for r in c.get("/api/profiles").json()["baseline"]["settings"]][-1] == "sys.sntp.server"
+
+        doc_id = body["devices"][0]["id"]
+        r = c.post(f"/api/devices/{doc_id}/override", headers=H,
+                   json={"rule": {"path": "sys.sntp.server", "op": "=", "value": "pool.ntp.org", "comment": "test"}})
+        assert r.status_code == 200, r.text
+        ov = c.get("/api/profiles").json()["overrides"]
+        assert ov == [{"id": doc_id, "ignore": [], "settings": [{"path": "sys.sntp.server", "op": "=",
+                                                                  "value": "pool.ntp.org", "comment": "test"}]}]
+
+
+def test_policy_page_assets():
+    """One Policy page with the tabs Rules, Overrides and YAML; the Profiles menu entry is gone, old links redirect."""
     with tempfile.TemporaryDirectory() as tmp:
         _, _, c = setup(tmp)
         html = c.get("/").text
-        assert 'href="#profiles" data-page="profiles"' in html and 'id="tab-profiles"' in html
-        assert 'data-actions="profiles" href="#profiles/new"' in html
+        assert 'data-page="profiles"' not in html and 'id="tab-profiles"' not in html
+        assert 'href="#policy" data-page="policy"' in html and 'id="tab-policy"' in html
+        for tab in ("rules", "overrides", "yaml"):
+            assert f'data-pol-tab="{tab}"' in html
+        assert 'data-pol-view="rules" href="#policy/profile/new"' in html and 'id="polSave"' in html
         js = all_js(c)
-        assert "profiles: {" in js and "api/profiles/preview" in js and "/override`" in js
+        assert "profiles: {" not in js and "api/profiles/preview" in js and "api/baseline/preview" in js
+        assert "function legacyPolicyHash" in js and "/override`" in js
 
 
 if __name__ == "__main__":

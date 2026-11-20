@@ -5,8 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- **Policy and Profiles are one page.** "Policy" has the tabs Rules, Overrides and YAML. Rules lists the baseline
+  and the profiles in the order they are evaluated. The **baseline can be edited without YAML** now, with the same
+  rule editor and live preview as a profile (current value per device, resulting findings). Overrides lists every
+  device override with its comment, read only. YAML is the former Policy editor. Old links (`#profiles`,
+  `#profiles/<name>`) lead to the new place; the source "Baseline" or "Override" of a finding links there too
 - Navigation grouped by what a page is for: Dashboard and Devices on top, then Checks (Findings, Peer comparison,
-  Firmware), Target state (Profiles, Policy), Tools (Bulk change, Backups) and System (Activity, Settings)
+  Firmware), Target state (Policy), Tools (Bulk change, Backups) and System (Activity, Settings)
 - Device list: search, type and status stay in the filter bar; the filters for address, findings, firmware,
   password and radio stack open with "Filters", which shows how many of them are set. The button to change a
   setting on the devices shown is called "Bulk change", like the page it opens, and carries its icon
