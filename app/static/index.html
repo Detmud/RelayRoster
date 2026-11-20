@@ -57,9 +57,6 @@
             <a class="nav-link" href="#firmware" data-page="firmware"><span class="nav-link-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0 -18"/><path d="M8 12l4 -4l4 4"/><path d="M12 16v-8"/></svg></span><span class="nav-link-title">Firmware</span></a>
           </li>
           <li class="nav-section-title" role="presentation">Target state</li>
-          <li class="nav-item" data-page="profiles">
-            <a class="nav-link" href="#profiles" data-page="profiles"><span class="nav-link-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M17 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/></svg></span><span class="nav-link-title">Profiles</span></a>
-          </li>
           <li class="nav-item" data-page="policy">
             <a class="nav-link" href="#policy" data-page="policy"><span class="nav-link-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/><path d="M9 14l2 2l4 -4"/></svg></span><span class="nav-link-title">Policy</span></a>
           </li>
@@ -130,9 +127,9 @@
                 </div>
               </div>
               <a class="btn d-none" data-actions="backups" href="api/backup.zip" download><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>All as ZIP</a>
-              <a class="btn btn-primary d-none" data-actions="profiles" href="#profiles/new" id="profNew"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>New profile</a>
-              <button id="polCheck" class="btn d-none" data-actions="policy" type="button">Validate</button>
-              <button id="polSave" class="btn btn-primary d-none" data-actions="policy" type="button">Save</button>
+              <a class="btn btn-primary d-none" data-actions="policy" data-pol-view="rules" href="#policy/profile/new" id="profNew"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>New profile</a>
+              <button id="polCheck" class="btn d-none" data-actions="policy" data-pol-view="yaml" type="button">Validate</button>
+              <button id="polSave" class="btn btn-primary d-none" data-actions="policy" data-pol-view="yaml" type="button">Save</button>
               <button id="setSave" class="btn btn-primary d-none" data-actions="settings" type="button">Save</button>
             </div>
           </div>
@@ -398,11 +395,6 @@
           <div id="devPage"></div>
         </div>
 
-        <!-- Profiles without YAML -->
-        <div id="tab-profiles" class="rr-tab d-none">
-          <div id="profPage"></div>
-        </div>
-
         <!-- All write actions across all devices -->
         <div id="tab-activity" class="rr-tab d-none">
           <div id="auditPage"></div>
@@ -413,8 +405,16 @@
           <div id="bulkPage"></div>
         </div>
 
+        <!-- Policy: rules (baseline and profiles) without YAML, overrides, YAML editor -->
         <div id="tab-policy" class="rr-tab d-none">
-          <div class="card">
+          <ul class="nav nav-tabs mb-3 rr-scroll-tabs" id="polTabs" role="tablist" aria-label="Policy sections">
+            <li class="nav-item"><a class="nav-link" href="#policy" data-pol-tab="rules" role="tab">Rules</a></li>
+            <li class="nav-item"><a class="nav-link" href="#policy/overrides" data-pol-tab="overrides" role="tab">Overrides</a></li>
+            <li class="nav-item"><a class="nav-link" href="#policy/yaml" data-pol-tab="yaml" role="tab">YAML</a></li>
+          </ul>
+          <div id="profPage"></div>
+          <div id="polOverrides" class="d-none"></div>
+          <div id="polYaml" class="card d-none">
             <div class="card-body">
               <div id="polMsg" class="alert d-none" role="alert"></div>
               <div class="rr-editor">

@@ -39,7 +39,8 @@ but the setting does not, the finding is "missing" (usually older firmware).
   loss, calibration check) and **Button input** (Shelly i4 as pure push-button input). An existing
   `/data/policy.yaml` is never overwritten.
 
-The **Profiles** page edits the same file round-trip (ruamel.yaml): comments, order and formatting are kept. Before
+The **Policy** page edits the baseline and the profiles without YAML (tab Rules) and lists the overrides; the tab
+YAML edits the whole file. Both write round-trip (ruamel.yaml): comments, order and formatting are kept. Before
 every save the previous file is kept as `policy.yaml.bak-<time>` (the last 20 remain).
 
 ## Address plan (`network`)

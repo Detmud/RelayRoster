@@ -426,7 +426,8 @@ const compDocLink = (secId) => {
   return `<a class="btn btn-sm btn-ghost-secondary" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Shelly API documentation">${ICON.external}Docs</a>`;
 };
 
-const ruleSource = (s) => s.startsWith("Profile: ") ? `<a href="${profHref(s.slice(9))}">${esc(s)}</a>` : esc(s);
+const ruleSource = (s) => s.startsWith("Profile: ") ? `<a href="${profHref(s.slice(9))}">${esc(s)}</a>`
+  : s === "Baseline" ? `<a href="#policy/baseline">${esc(s)}</a>` : s === "Override" ? `<a href="#policy/overrides">${esc(s)}</a>` : esc(s);
 
 function devFindings(b) {
   const findings = b.findings.length ? `<div class="card">${cardTable(["Finding", "Expected", "Actual", "Source"], findingRows(b.findings, true))}</div>`

@@ -685,10 +685,10 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         with policy_lock:
             if base_hash and text_hash(pol.read_text(cfg.policy_path)) != base_hash:
                 return JSONResponse({"ok": False, "conflict": True, "errors": [
-                    "policy.yaml was changed elsewhere since you opened it (another tab, Profiles or Apply)."]},
+                    "policy.yaml was changed elsewhere since you opened it (another browser tab, the rule editor or Apply)."]},
                     status_code=409)
             pe.save_text(cfg.policy_path, text)   # with a backup of the old file
-        store.add_audit("", "policy", None, None, True, "edited in the Policy tab")
+        store.add_audit("", "policy", None, None, True, "edited in the YAML editor")
         return JSONResponse({"ok": True, "errors": [], "hash": text_hash(text)})
 
     # ---- Profile ------------------------------------------------------------------------
@@ -704,11 +704,11 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
                 pol.parse(text)
             except pol.PolicyError:
                 return JSONResponse({"ok": False, "errors": [
-                    "policy.yaml is invalid. Fix it in the Policy tab first."]}, status_code=409)
+                    "policy.yaml is invalid. Fix it in the YAML tab first."]}, status_code=409)
             try:
                 new_text, _ = pe.candidate(text, change)
                 pe.save_text(cfg.policy_path, new_text)
-                store.add_audit("", "policy", None, None, True, "changed by RelayRoster (profiles, apply)")
+                store.add_audit("", "policy", None, None, True, "changed by RelayRoster (rules, apply)")
             except pe.EditError as exc:
                 return JSONResponse({"ok": False, "errors": exc.errors}, status_code=exc.status)
             except pol.PolicyError as exc:
@@ -731,12 +731,16 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         rep = report.build(store, policy_data, cfg.poll_interval_min) if policy_data else {"findings": []}
         stats = profiles_view.summary(policy_data, devices, rep["findings"])
         profiles = []
+        baseline, overrides = None, []
         if not errors:
-            for p in pe.list_profiles(pe.load_doc(text)):
+            doc = pe.load_doc(text)
+            baseline = {"settings": pe.baseline_json(doc), **stats[profiles_view.BASELINE]}
+            overrides = pe.list_overrides(doc)
+            for p in pe.list_profiles(doc):
                 # devices: devices the profile applies to; assigned/exclude: assignment in policy.yaml
                 profiles.append({**p, "assigned": p["devices"],
                                  **stats.get(p["name"], {"devices": [], "findings": 0})})
-        return {"profiles": profiles, "errors": errors, "templates": templates(),
+        return {"profiles": profiles, "baseline": baseline, "overrides": overrides, "errors": errors, "templates": templates(),
                 "choices": profiles_view.choices(devices),
                 "devices": [profiles_view.device_row(d) for d in devices]}
 
@@ -744,7 +748,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
     def preview_profile(profile: dict[str, Any] = Body(...), original: str | None = Body(None)) -> JSONResponse:
         policy_data, errors = load_policy()
         if errors:
-            return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the Policy tab first."]},
+            return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the YAML tab first."]},
                                 status_code=409)
         try:
             data, prof = pe.preview_policy(policy_data, profile, original)
@@ -756,6 +760,27 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         devices, configs = device_configs()
         return JSONResponse({"ok": True, "errors": [], **profiles_view.preview(pol.normalize(data), prof, devices,
                                                                               configs)})
+
+    @app.post("/api/baseline/preview", dependencies=[Depends(auth), Depends(csrf)])
+    def preview_baseline(settings: list[Any] = Body(..., embed=True)) -> JSONResponse:
+        policy_data, errors = load_policy()
+        if errors:
+            return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the YAML tab first."]},
+                                status_code=409)
+        try:
+            data, prof = pe.preview_baseline(policy_data, settings)
+        except pe.EditError as exc:
+            return JSONResponse({"ok": False, "errors": exc.errors}, status_code=422)
+        errs = pol.validate(data)
+        if errs:
+            return JSONResponse({"ok": False, "errors": errs}, status_code=422)
+        devices, configs = device_configs()
+        return JSONResponse({"ok": True, "errors": [], **profiles_view.preview(pol.normalize(data), prof, devices,
+                                                                              configs, baseline=True)})
+
+    @app.put("/api/baseline", dependencies=[Depends(auth), Depends(csrf)])
+    def put_baseline(settings: list[Any] = Body(..., embed=True)) -> JSONResponse:
+        return edit_policy(lambda doc: pe.set_baseline_rules(doc, settings)) or JSONResponse({"ok": True, "errors": []})
 
     @app.post("/api/profiles", dependencies=[Depends(auth), Depends(csrf)])
     def create_profile(profile: dict[str, Any] = Body(...), position: int | None = Body(None)) -> JSONResponse:
@@ -792,7 +817,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         """Assign devices to a profile or take them out. Writes `devices`/`exclude` in policy.yaml."""
         policy_data, errors = load_policy()
         if errors:
-            return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the Policy tab first."]},
+            return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the YAML tab first."]},
                                 status_code=409)
         unknown = [i for i in [*add, *remove] if not store.device(i)]
         if unknown:
@@ -831,7 +856,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             if mode == "profile":
                 policy_data, errors = load_policy()
                 if errors:
-                    return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the Policy tab "
+                    return JSONResponse({"ok": False, "errors": ["policy.yaml is invalid. Fix it in the YAML tab "
                                                                  "first."]}, status_code=409)
                 plans = applymod.plan_profile(collector, policy_data, str(profile or ""), device_ids)
             elif mode == "bulk":
