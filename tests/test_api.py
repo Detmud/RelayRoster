@@ -533,6 +533,84 @@ def test_firmware_update_job():
         assert most == 2 and [it["status"] for it in v["items"]] == ["done", "done"], (most, v["items"])
 
 
+def _firmware_run(tmp, fleet, dev_id, intercept=None):
+    """One firmware job for one device; intercept(request) may answer instead of the fleet."""
+    base = fleet.transport()
+    app = create_app(make_settings(tmp, shelly_password="secret-pw", allow_firmware_update=True),
+                     transport=httpx.MockTransport(lambda r: (intercept and intercept(r)) or base.handler(r)),
+                     autostart=False)
+    col = app.state.collector
+    col.firmware.poll_s, col.firmware.timeout_s = 0.01, 0.5
+
+    async def go():
+        await col.run(scan=True)
+        col.firmware.start([dev_id])
+        await col.firmware.wait()
+    asyncio.run(go())
+    return col, col.firmware.job.items[0]
+
+
+def test_firmware_skips_moving_cover():
+    for state in ("opening", "closing", "calibrating"):
+        with tempfile.TemporaryDirectory() as tmp:
+            fleet = make_fleet()
+            g4 = fleet.devices["192.168.10.31"]
+            g4.stable, g4.cover_status = "9.9.9", {"cover:0": {"state": state}}
+            _, it = _firmware_run(tmp, fleet, g4.id)
+            assert it.status == "skipped" and "cover:0 is moving" in it.error, (state, it.error)
+            assert g4.updates == []
+
+
+def test_firmware_survives_invalid_answer_while_booting():
+    for body in ("", "null", '{"id": 1}'):
+        with tempfile.TemporaryDirectory() as tmp:
+            fleet = make_fleet()
+            dev, sent = fleet.devices["192.168.10.21"], []
+
+            def intercept(r):
+                if dev.updates and r.url.host == "192.168.10.21" and not sent:
+                    sent.append(1)
+                    return httpx.Response(200, text=body)
+            _, it = _firmware_run(tmp, fleet, dev.id, intercept)
+            assert sent and it.status == "done" and it.new == "1.7.6", (body, it.status, it.error)
+
+
+def test_firmware_other_device_at_the_address():
+    with tempfile.TemporaryDirectory() as tmp:
+        fleet = make_fleet()
+        dev, other = fleet.devices["192.168.10.21"], fleet.devices["192.168.10.31"]
+
+        def intercept(r):
+            return other.handle(r) if dev.updates and r.url.host == "192.168.10.21" else None
+        col, it = _firmware_run(tmp, fleet, dev.id, intercept)
+        assert it.status == "failed" and other.id in it.error, (it.status, it.error)
+        entry = col.store.audit(action="firmware")[0]
+        assert not entry["ok"] and entry["device_id"] == dev.id
+
+
+def test_one_job_at_a_time():
+    """No firmware update and no single restart while another job is running."""
+    with tempfile.TemporaryDirectory() as tmp:
+        fleet, app, c = setup(tmp, allow_firmware_update=True, allow_reboot=True)
+        col = app.state.collector
+
+        class Running:
+            class job:
+                running = True
+        ids = ["shellyplusi4-b8d61a000101"]
+        real = col.apply
+        col.apply = Running()
+        r = c.post("/api/firmware/update", json={"device_ids": ids}, headers=H)
+        assert r.status_code == 409 and "apply job" in r.json()["detail"]
+        col.apply = real
+        for name in ("firmware", "apply", "address"):
+            real = getattr(col, name)
+            setattr(col, name, Running())
+            assert c.post(f"/api/devices/{ids[0]}/reboot", headers=H).status_code == 409, name
+            setattr(col, name, real)
+        assert "Shelly.Reboot" not in fleet.all_calls() and not any(d.updates for d in fleet.devices.values())
+
+
 def test_reboot_disabled_by_default():
     """No restart without the switch, no Shelly.Reboot on the network."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -721,7 +799,7 @@ def test_detail_name_inline_edit_assets():
         assert 'id="tab-device"' in html and 'id="devActions"' in html and 'data-actions="device"' in html
         assert 'id="detail"' not in html and 'id="dFoot"' not in html, "no device dialog"
         js = all_js(c)
-        assert "renameForm" not in js and "renameBlock" not in js, "altes Umbenennen-Formular entfernt"
+        assert "renameForm" not in js and "renameBlock" not in js, "old rename form removed"
         assert 'id="nameEdit"' not in js and 'id="nameInput"' not in js, "name only via Settings"
         assert "openDetail" not in js and "#device/" in js and "data-menu-toggle" in js
         # Editing in the Settings tab, preview before writing, without the switch a link to Settings

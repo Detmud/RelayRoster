@@ -328,6 +328,12 @@ def outlier_map(peer: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
 COVER_MOVING = ("opening", "closing", "calibrating")
 
 
+def moving_covers(status: Any) -> list[str]:
+    """Shutters that are moving right now, from Shelly.GetStatus, e.g. ["cover:0"]."""
+    return sorted(k for k, v in (status or {}).items()
+                  if k.startswith("cover:") and isinstance(v, dict) and v.get("state") in COVER_MOVING)
+
+
 def cover_view(config: dict[str, Any] | None, status: dict[str, Any] | None) -> list[dict[str, Any]]:
     config, status = config or {}, status or {}
     comps = sorted({c for c in (*config, *status) if c.startswith("cover:")}, key=_sort_key)

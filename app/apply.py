@@ -35,7 +35,6 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 _job_ids = itertools.count(1)
-MOVING = ("opening", "closing")
 
 
 def _row(path: str, actual: Any, new: Any, status: str, note: str | None = None) -> dict[str, Any]:
@@ -419,7 +418,7 @@ class ApplyRunner:
                     item.duration_s = int(time.monotonic() - started)
         finally:
             job.finished_at = now_iso()
-            log.info("Anwenden-Job %s fertig: %s", job.id, job.view()["counts"])
+            log.info("Apply job %s finished: %s", job.id, job.view()["counts"])
 
     async def _moving_covers(self, item: Item, always: bool = False) -> list[int]:
         """Numbers of the shutters that are moving right now. Only if the job writes cover values or restarts."""
@@ -434,5 +433,4 @@ class ApplyRunner:
                 status = await client.call("Shelly.GetStatus") or {}
             except (httpx.HTTPError, RpcError, WriteBlocked, ValueError):
                 return []    # set_config reports reachability itself
-        return sorted(int(k.split(":", 1)[1]) for k, v in status.items()
-                      if k.startswith("cover:") and isinstance(v, dict) and v.get("state") in MOVING)
+        return [int(k.split(":", 1)[1]) for k in devicepage.moving_covers(status)]

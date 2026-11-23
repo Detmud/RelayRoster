@@ -407,7 +407,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             raise HTTPException(404, "Unknown device")
         return {"forgotten": device_id}
 
-    # ---- Umbenennen ---------------------------------------------------------------------
+    # ---- Rename ---------------------------------------------------------------------
 
     def rename_allowed() -> None:
         # The name is a normal setting: same switch as all configuration changes
@@ -475,7 +475,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
               dependencies=[Depends(auth), Depends(csrf), Depends(firmware_allowed)])
     async def firmware_update(device_ids: list[str] = Body(..., embed=True),
                         stage: str = Body("stable", embed=True)) -> dict[str, Any]:
-        """Starts an update job. Devices run one after the other, the status comes via /api/firmware/job."""
+        """Starts an update job. Several devices run at the same time (firmware_parallel), the status comes via /api/firmware/job."""
         try:
             job = collector.firmware.start(device_ids, stage)
         except KeyError as exc:
@@ -557,6 +557,8 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
     @app.post("/api/devices/{device_id}/reboot", dependencies=[Depends(auth), Depends(csrf), Depends(reboot_allowed)])
     async def reboot_device(device_id: str) -> dict[str, Any]:
         """Restarts the device and answers only once it is back (at most ~90 s)."""
+        if any(r.job and r.job.running for r in (collector.firmware, collector.apply, collector.address)):
+            raise HTTPException(409, "A job is running, wait until it has finished")
         try:
             return {"device_id": device_id, **await collector.reboot(device_id)}
         except KeyError:
