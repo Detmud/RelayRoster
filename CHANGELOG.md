@@ -7,7 +7,8 @@ All notable changes to this project are documented here. The format follows
 
 - Device settings: **"Static address…" in the Wi-Fi and Ethernet cards** opens the address change for this
   device, also when it is inside its block or has none. Suggested is the next free address of its block, else
-  the current one (DHCP -> static in place). A typed address is checked again right away
+  the current one (DHCP -> static in place). A typed address is checked again right away. A change counts as
+  done only when the device reports the static values as stored
 - **Static addresses only with values from the policy.** Netmask, gateway and DNS server always come from
   `network` in the policy, no longer from the device's own static configuration. The address is written only when
   `subnet`, `dhcp_pool`, `gateway` and `nameserver` are all set and the address is a host address of the subnet,

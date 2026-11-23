@@ -458,6 +458,19 @@ def test_address_change_job():
                 if not again["running"]:
                     break
                 _time.sleep(0.01)
+            # The device answers at its address but did not take the static mode: not reported as done
+            still = fleet.devices["192.168.200.30"]
+            still.config["wifi"]["sta"]["ipv4mode"] = "dhcp"
+            still.config_ignore = {"wifi.sta.ipv4mode"}
+            assert c.post("/api/address/apply", json={"items": [{"device_id": a, "ip": "192.168.200.30"}]},
+                          headers=H).status_code == 202
+            for _ in range(500):
+                kept = c.get("/api/address/job").json()["job"]
+                if not kept["running"]:
+                    break
+                _time.sleep(0.01)
+            still.config_ignore = set()
+        assert kept["items"][0]["status"] == "failed" and "ipv4mode" in kept["items"][0]["error"], kept
         assert again["items"][0]["status"] == "done", again
         assert fleet.devices["192.168.200.30"].config_writes[-1][1]["config"]["sta"]["ip"] == "192.168.200.30"
         res = {it["device_id"]: it for it in job["items"]}

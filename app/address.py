@@ -11,7 +11,8 @@ Flow per device:
    from the device or guessed: unless subnet, DHCP pool, gateway, DNS server and the target fit together, the
    device is not moved
 4. Set the address. The connection dropping right after is expected
-5. Wait for the device at the new address and check its ID; only then store the new address and read it again
+5. Wait for the device at the new address and check its ID and that the static values are stored; only then
+   store the new address and read it again
 6. If it does not come back: report old and new address. There is no rollback on the device
 
 The identity of a device stays its ID (MAC), never the address. Only one job runs at a time and never next to a
@@ -326,6 +327,7 @@ class AddressMover:
             moved = ShellyClient(http, target, pw, timeout)
             deadline = time.monotonic() + self.timeout_s
             new_info: dict[str, Any] | None = None
+            wrong: list[str] = []
             while time.monotonic() < deadline:
                 await asyncio.sleep(self.poll_s)
                 try:
@@ -335,8 +337,22 @@ class AddressMover:
                 if got.get("id") != item.device_id:
                     raise fail(f"{target} answers as {got.get('id')}, not {item.device_id}. Address conflict, "
                                f"check both devices.")
+                # An answer alone proves nothing when the address stays the same (DHCP -> static in place)
+                try:
+                    cfg = await moved.call("Shelly.GetConfig") or {}
+                except (httpx.HTTPError, RpcError, ValueError):
+                    continue
+                cfg = (cfg.get("eth") if call["iface"] == "eth" else (cfg.get("wifi") or {}).get("sta")) or {}
+                wanted = {"ipv4mode": "static", "ip": target, "netmask": call["netmask"], "gw": call["gw"],
+                          "nameserver": call["nameserver"]}
+                wrong = [k for k, v in wanted.items() if cfg.get(k) != v]
+                if wrong:
+                    continue
                 new_info = got
                 break
+            if new_info is None and wrong:
+                raise fail(f"The device answers at {target}, but did not store the static address "
+                           f"({', '.join(wrong)} differ). Check its web UI.")
             if new_info is None:
                 raise fail(f"The device did not answer at {target} within {int(self.timeout_s)} s (before: {item.old}). "
                            "Nothing is rolled back; check the device at both addresses.")
