@@ -304,7 +304,7 @@ class Collector:
         methods = self.store.device_methods(device_id)
         return methods is None or method.lower() in methods
 
-    # ---- Umbenennen ---------------------------------------------------------------------
+    # ---- Rename ---------------------------------------------------------------------
 
     async def rename(self, device_id: str, new_name: str) -> dict[str, Any]:
         """Writes sys.device.name to the device and confirms it by reading again.
@@ -578,7 +578,7 @@ class Collector:
                 await asyncio.sleep(self.reboot_poll_s)
                 try:
                     uptime = (await client.call("Sys.GetStatus") or {}).get("uptime")
-                except (httpx.HTTPError, RpcError):
+                except (httpx.HTTPError, RpcError, ValueError):
                     seen_down = True
                     continue
                 # Lower uptime than before = restarted. Without uptime it is enough that it was gone and is back
@@ -595,7 +595,7 @@ class Collector:
         log.info("Restart %s confirmed after %s s (uptime %s s)", device_id, seconds, uptime)
         return {"ok": True, "seconds": seconds, "uptime": uptime, "read": ok}
 
-    # ---- Hintergrund-Loop ---------------------------------------------------------------------
+    # ---- Background loop ---------------------------------------------------------------------
 
     async def loop(self) -> None:
         await asyncio.sleep(2)

@@ -342,9 +342,14 @@ function devSettings(b) {
     const edit = !editable ? ""
       : !allowConfig ? `<a class="btn btn-sm rr-off" href="#settings" aria-disabled="true" title="Config changes are off. Turn them on in Settings">${ICON.pencil}Edit</a>`
         : `<button class="btn btn-sm${editing ? " btn-primary" : ""}" type="button" data-cfg-edit="${esc(sec.id)}">${editing ? "Done" : `${ICON.pencil}Edit`}</button>`;
+    // Wi-Fi and Ethernet addresses are not edited here (lockout risk) but through the address job, which checks
+    // the device at its new address; keeping the current address turns DHCP into a static one
+    const mode = sec.fields.find((f) => f.path === (sec.id === "wifi" ? "wifi.sta.ipv4mode" : `${sec.id}.ipv4mode`));
+    const addr = sec.id === "eth" || (sec.id === "wifi" && sec.fields.some((f) => f.path.startsWith("wifi.sta.")))
+      ? `<button class="btn btn-sm" type="button" data-addr-open="${esc(b.device.id)}" title="${mode?.value === "static" ? "Change the static address" : "Switch from DHCP to a static address"}">Static address…</button>` : "";
     const drafts = sec.fields.filter((f) => cfgHas(f.path)).length;
     return { id: sec.id, title: sec.title, notes, state: sec.enabled, drafts, html: `<div class="card${editing ? " rr-editing" : ""}" data-cfg-card="${esc(sec.id)}">
-      <div class="card-header"><div class="rr-minw0"><h3 class="card-title">${esc(sec.title)}</h3>${compAbout(sec.id)}</div><div class="card-actions btn-list flex-nowrap">${compDocLink(sec.id)}${flag}${edit}</div></div>
+      <div class="card-header"><div class="rr-minw0"><h3 class="card-title">${esc(sec.title)}</h3>${compAbout(sec.id)}</div><div class="card-actions btn-list flex-nowrap">${compDocLink(sec.id)}${flag}${addr}${edit}</div></div>
       ${active.length ? `<div class="table-responsive"><table class="table table-vcenter card-table rr-settings-table"><tbody>${active.map(row).join("")}</tbody></table></div>` : ""}
       ${idle.length ? `<details class="rr-peer-more border-top"${editing && idle.some((f) => f.editable) ? " open" : ""}><summary class="card-body py-2 text-secondary small">${idle.length} setting${idle.length === 1 ? "" : "s"} without effect (needs ${esc(needs)})</summary>
         <div class="table-responsive"><table class="table table-vcenter card-table rr-settings-table rr-hidden"><tbody>${idle.map(row).join("")}</tbody></table></div></details>` : ""}

@@ -36,16 +36,19 @@ read, reads the device back, stores a snapshot and writes the audit log (page Ac
   and value for many devices. The preview shows per device whether a value will change, is already set, is not
   supported or not writable. Bulk change can also record the rule in `policy.yaml` so later drift is reported.
 - **Restore**: play a configuration from a backup back onto the same device, with a preview of every path that changes.
-- **Firmware updates**: per device, per type or all, up to four devices at the same time ("Parallel firmware
-  updates" in Settings, `FIRMWARE_PARALLEL`; 1 = one after the other); `Shelly.CheckForUpdate`, then `Shelly.Update`,
-  then wait for the new version (up to 180 s). The dialog shows the step of every device: check, request, install,
-  restart, verify. Beta only when explicitly chosen. Firmware URLs are never accepted.
+- **Firmware updates**: per device, per type or all (moving shutters are skipped), up to four devices at the same time
+  ("Parallel firmware updates" in Settings, `FIRMWARE_PARALLEL`; 1 = one after the other); `Shelly.CheckForUpdate`,
+  then `Shelly.Update`, then wait for the new version (up to 180 s). The dialog shows the step of every device: check,
+  request, install, restart, verify. Beta only when explicitly chosen. Firmware URLs are never accepted.
 - **Restart**: `Shelly.Reboot`, confirmed once the device answers again with a lower uptime.
 - **Apply address plan**: gives devices that are not in their address block (`network` in the policy) the next free
   address of the block as a **static address on the device**, not as a reservation in the router. Per device:
   nothing may answer at the new address, then the address is set, RelayRoster waits for the device there (90 s)
-  and compares its ID. Netmask, gateway and DNS server come from the device's static configuration; a device on
-  DHCP has none, then `network.gateway`, `network.nameserver` and `network.subnet` from the policy are used. One
+  and compares its ID. Netmask, gateway and DNS server come from `network` in the policy only, never from the
+  device. The address is set only when `subnet`, `dhcp_pool`, `gateway` and `nameserver` are all set and the new
+  address is a host address of the subnet, outside the DHCP pool, inside the device's block and neither gateway
+  nor DNS server; the gateway has to be in the same subnet. "Static address…" in the Wi-Fi and Ethernet cards of a
+  device does the same for that one device; its current address can be kept if it fits these rules. One
   device after another, never next to a firmware or apply job; moving shutters are skipped. There is no rollback:
   a device that does not come back is reported with both addresses. Everything that addresses the device by IP
   needs the new address afterwards.

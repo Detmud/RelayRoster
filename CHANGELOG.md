@@ -12,6 +12,19 @@ All notable changes to this project are documented here. The format follows
   10 seconds are sent together, the first inventory and existing findings are not reported. "Send test
   notification" checks the URLs. Nothing is written to devices. See docs/configuration.md
 
+## [1.1.0] - 2026-11-27
+
+- Device settings: **"Static address…" in the Wi-Fi and Ethernet cards** opens the address change for this
+  device, also when it is inside its block or has none. Suggested is the next free address of its block, else
+  the current one (DHCP -> static in place). A typed address is checked again right away. A change counts as
+  done only when the device reports the static values as stored
+- **Static addresses only with values from the policy.** Netmask, gateway and DNS server always come from
+  `network` in the policy, no longer from the device's own static configuration. The address is written only when
+  `subnet`, `dhcp_pool`, `gateway` and `nameserver` are all set and the address is a host address of the subnet,
+  outside the DHCP pool, inside the device's block and neither gateway nor DNS server. Saving the policy reports a
+  gateway outside the subnet and blocks that overlap the DHCP pool or contain the gateway or DNS server
+- Device settings: "Enabled" is the first row of every component. Wi-Fi lists the station first (enabled, SSID,
+  IPv4 mode), then the fallback network, the access point and roaming
 - **Policy and Profiles are one page.** "Policy" has the tabs Rules, Overrides and YAML. Rules lists the baseline
   and the profiles in the order they are evaluated. The **baseline can be edited without YAML** now, with the same
   rule editor and live preview as a profile (current value per device, resulting findings). Overrides lists every
@@ -36,6 +49,14 @@ All notable changes to this project are documented here. The format follows
 - Firmware updates of several devices run at the same time, four by default ("Parallel firmware updates" in
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
+
+- Fixed: only one job at a time. A firmware update no longer starts while settings, restarts or passwords are being
+  written, and the single "Restart" waits until a running job has finished (#59)
+- Fixed: a firmware update skips devices with a moving shutter; `calibrating` counts as moving in every job (#60)
+- Fixed: an incomplete answer of a booting device no longer ends a firmware update or restart as failed; unexpected
+  errors of a firmware update are recorded in Activity (#61)
+- Fixed: after a firmware update the MAC is compared, so another device at the same address is not reported as
+  updated (#62)
 
 - **Apply address plan** (new write function, off by default, switch "Allow address changes" / `ALLOW_ADDRESS`):
   devices outside their address block get the next free address of the block as a static address on the device.

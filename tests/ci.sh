@@ -12,7 +12,7 @@ trap 'rm -rf "$WORK"' EXIT
 
 step() { printf '\n=== %s ===\n' "$*"; }
 
-step "Python-Umgebung"
+step "Python environment"
 if [ -n "${CI_VENV:-}" ]; then
   PY="$CI_VENV/bin/python"
 else
@@ -25,7 +25,7 @@ fi
 step "ruff (errors, no style questions)"
 "$PY" -m ruff check --select F,E9 app tests tools
 
-step "Standard-Policy parst"
+step "Default policy parses"
 "$PY" -c "import app.policy as p; p.parse(open(p.DEFAULT_POLICY_PATH, encoding='utf-8').read()); print('ok')"
 
 step "test_core.py"
