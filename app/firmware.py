@@ -4,12 +4,13 @@ on the Wi-Fi and the vendor's servers low and leaves most of the house usable wh
 
 Flow per device, each step is a status the UI shows:
 1. `checking`: identity (this device must answer at the stored address), then `Shelly.CheckForUpdate` for the
-   target version of the channel. No update available or already on the target version → `up_to_date`
+   target version of the channel. No update available or already on the target version → `up_to_date`;
+   a moving shutter → `skipped`
 2. `requested`: `Shelly.Update {"stage": …}` sent. If the connection drops, the device has already started
 3. Up to `timeout_s`, `Shelly.GetDeviceInfo` every `poll_s` seconds:
    `installing` while the device still answers with the old version (it downloads and writes the firmware),
    `rebooting` while it does not answer
-4. `verifying`: the device is back with a new `ver` or `fw_id`; read everything again (new snapshot)
+4. `verifying`: the device (same MAC) is back with a new `ver` or `fw_id`; read everything again (new snapshot)
 5. `done`, recorded in the audit log
 
 Only one job runs at a time. Cancelling prevents further devices from starting, running updates finish.
@@ -25,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
+from .devicepage import moving_covers
 from .shelly import FIRMWARE_STAGES, RpcError, ShellyClient, WriteBlocked
 from .store import now_iso
 
@@ -125,13 +127,16 @@ class FirmwareUpdater:
         self.job: Job | None = None
         self._task: asyncio.Task | None = None
 
-    # ---- Job-Steuerung --------------------------------------------------------------------------
+    # ---- Job control --------------------------------------------------------------------------
 
     def start(self, device_ids: list[str], stage: str = "stable") -> Job:
         if stage not in FIRMWARE_STAGES:
             raise ValueError(f"Unknown channel '{stage}', allowed: {', '.join(FIRMWARE_STAGES)}")
         if self.job and self.job.running:
             raise RuntimeError("A firmware update is already running")
+        apply = getattr(self.collector, "apply", None)
+        if apply and apply.job and apply.job.running:
+            raise RuntimeError("An apply job is running, wait until it has finished")
         moving = getattr(self.collector, "address", None)
         if moving and moving.job and moving.job.running:
             raise RuntimeError("Addresses are being changed, wait until this has finished")
@@ -187,13 +192,14 @@ class FirmwareUpdater:
                     log.exception("Firmware update %s: unexpected error", item.device_id)
                     item.error = f"{type(exc).__name__}: {exc}"
                     item.set("failed")
+                    self.collector.store.add_audit(item.device_id, "firmware", item.old, item.target, False, item.error)
                 item.duration_s = int(time.monotonic() - item.started)
 
         try:
             await asyncio.gather(*(one(item) for item in job.items))
         finally:
             job.finished_at = now_iso()
-            log.info("Firmware-Job %s fertig: %s", job.id, job.view()["counts"])
+            log.info("Firmware job %s finished: %s", job.id, job.view()["counts"])
 
     # ---- one device ------------------------------------------------------------------------------
 
@@ -207,7 +213,7 @@ class FirmwareUpdater:
 
         def fail(msg: str) -> FirmwareError:
             store.add_audit(item.device_id, "firmware", item.old, item.target, False, msg)
-            log.warning("Firmware-Update %s fehlgeschlagen: %s", item.device_id, msg)
+            log.warning("Firmware update %s failed: %s", item.device_id, msg)
             return FirmwareError(msg)
 
         if not col.supports(item.device_id, "Shelly.Update"):
@@ -222,7 +228,7 @@ class FirmwareUpdater:
                     raise fail(f"{dev['host']} answers as {(info or {}).get('id')}, not {item.device_id}. "
                                "Run a network scan first.")
                 item.old = info.get("ver") or item.old
-                old_fw = info.get("fw_id")
+                old_fw, old_mac = info.get("fw_id"), info.get("mac")
                 offers = await client.check_for_update()
             except FirmwareError:
                 raise
@@ -235,7 +241,17 @@ class FirmwareUpdater:
                 item.set("up_to_date")
                 return
 
-            log.info("Firmware-Update %s: %s -> %s (%s)", item.device_id, item.old, item.target, stage)
+            # Right before the update: CheckForUpdate can take seconds
+            try:
+                moving = moving_covers(await client.call("Shelly.GetStatus"))
+            except (httpx.HTTPError, RpcError, ValueError) as exc:
+                raise fail(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
+            if moving:
+                item.error = f"{', '.join(moving)} is moving, try again when it has stopped"
+                item.set("skipped")
+                return
+
+            log.info("Firmware update %s: %s -> %s (%s)", item.device_id, item.old, item.target, stage)
             try:
                 await client.update_firmware(stage)
             except Exception as exc:
@@ -251,10 +267,17 @@ class FirmwareUpdater:
                 await asyncio.sleep(self.poll_s)
                 try:
                     info = await client.call("Shelly.GetDeviceInfo")
-                except (httpx.HTTPError, RpcError):
+                    if not isinstance(info, dict) or not info.get("ver"):
+                        raise ValueError("incomplete answer")
+                except (httpx.HTTPError, RpcError, ValueError, TypeError):   # also invalid JSON while booting
                     item.set("rebooting")
                     continue
-                if (info or {}).get("ver") != item.old or (old_fw and info.get("fw_id") != old_fw):
+                # The ID may change with an update, the MAC does not
+                same = info.get("mac") == old_mac if old_mac else info.get("id") == item.device_id
+                if not same:
+                    raise fail(f"{dev['host']} answers as {info.get('id')} after the update, not {item.device_id}. "
+                               "Run a network scan and check the version.")
+                if info.get("ver") != item.old or (old_fw and info.get("fw_id") != old_fw):
                     new_info = info
                     break
                 if item.status == "requested":      # still answers with the old version: downloading, writing
@@ -271,4 +294,4 @@ class FirmwareUpdater:
         item.set("done")
         note = None if item.new == item.target else f"expected {item.target}"
         store.add_audit(item.device_id, "firmware", item.old, item.new, True, note)
-        log.info("Firmware-Update %s erfolgreich: %s -> %s", item.device_id, item.old, item.new)
+        log.info("Firmware update %s done: %s -> %s", item.device_id, item.old, item.new)

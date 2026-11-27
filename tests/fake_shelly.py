@@ -94,7 +94,7 @@ class FakeShelly:
             "wifi": {"sta_ip": self.host, "status": "got ip", "ssid": "IoT", "rssi": -61},
         }
         for comp, cfg in self.config.items():
-            if comp.startswith("cover:"):   # stehender, kalibrierter Rollladen
+            if comp.startswith("cover:"):   # calibrated shutter at rest
                 out[comp] = {"id": cfg.get("id", 0), "source": "init", "state": "stopped", "apower": 0.0,
                              "voltage": 231.4, "current": 0.0, "pos_control": True, "current_pos": 100,
                              "last_direction": "open", "temperature": {"tC": 38.2, "tF": 100.8},

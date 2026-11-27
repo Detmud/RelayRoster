@@ -30,6 +30,14 @@ All notable changes to this project are documented here. The format follows
   Settings, `FIRMWARE_PARALLEL`; 1 keeps the old one-after-the-other). The update dialog shows the step of every
   device: check, request, install, restart, verify, with the seconds each step began
 
+- Fixed: only one job at a time. A firmware update no longer starts while settings, restarts or passwords are being
+  written, and the single "Restart" waits until a running job has finished (#59)
+- Fixed: a firmware update skips devices with a moving shutter; `calibrating` counts as moving in every job (#60)
+- Fixed: an incomplete answer of a booting device no longer ends a firmware update or restart as failed; unexpected
+  errors of a firmware update are recorded in Activity (#61)
+- Fixed: after a firmware update the MAC is compared, so another device at the same address is not reported as
+  updated (#62)
+
 - **Apply address plan** (new write function, off by default, switch "Allow address changes" / `ALLOW_ADDRESS`):
   devices outside their address block get the next free address of the block as a static address on the device.
   Preview with editable address, one device after another, check that the address is free, wait for the device at

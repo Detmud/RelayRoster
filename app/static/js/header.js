@@ -1,6 +1,6 @@
 "use strict";
 // Part of the UI, loads after app.js; shared global scope, order defined in index.html
-// ---- Umbenennen ------------------------------------------------------------------------
+// ---- Rename ------------------------------------------------------------------------
 
 let modeSet = false;
 
