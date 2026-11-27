@@ -11,11 +11,12 @@ from typing import Any
 
 import httpx
 
-from . import compare, devicepage, discovery, policy as pol, policy_edit, writable
+from . import compare, devicepage, discovery, policy as pol, policy_edit, report, writable
 from .config import Settings
 from .address import AddressMover
 from .apply import ApplyRunner
 from .firmware import FirmwareUpdater, _starting_update
+from .notify import Notifier
 from .shelly import RpcError, ShellyClient, WriteBlocked, clean_name, content_hash
 from .store import Store, now_iso
 
@@ -98,7 +99,8 @@ def _clock() -> float:
 
 
 class Collector:
-    def __init__(self, store: Store, settings: Settings, transport: httpx.AsyncBaseTransport | None = None):
+    def __init__(self, store: Store, settings: Settings, transport: httpx.AsyncBaseTransport | None = None,
+                 notify_transport: httpx.AsyncBaseTransport | None = None):
         self.store = store
         self.settings = settings
         self.transport = transport
@@ -113,6 +115,8 @@ class Collector:
         self.firmware = FirmwareUpdater(self)
         self.apply = ApplyRunner(self)    # apply profile, bulk change
         self.address = AddressMover(self)   # static address from the address plan
+        self.notifier = Notifier(store, settings, transport=notify_transport)   # ntfy / webhook
+        self._unreachable: set[str] = set()   # last read of these devices got no answer (for "offline")
         # Restart: how often and how long RelayRoster asks until the device answers again
         self.reboot_poll_s = 2.0
         self.reboot_timeout_s = 90.0
@@ -147,6 +151,9 @@ class Collector:
             st.running, st.last_error = True, None
             st.last_started = now_iso()
             summary = {"scanned": False, "found": 0, "polled": 0, "changed": 0, "errors": 0, "cancelled": False}
+            known = self.store.devices()
+            results: dict[str, bool] = {}
+            completed = False
             try:
                 async with self._http() as http:
                     if scan or (auto_scan and not self.store.devices()):
@@ -183,10 +190,12 @@ class Collector:
                         summary["polled"] += 1
                         summary["changed"] += int(changed)
                         summary["errors"] += int(not ok)
+                        results[dev["id"]] = dev["id"] not in self._unreachable   # answered
                         st.done += 1
 
                     await asyncio.gather(*(poll(d) for d in devices))
                 self._polls += 1
+                completed = True
             except Exception as exc:  # never let the background loop die
                 log.exception("Run failed")
                 st.last_error = str(exc)
@@ -195,14 +204,42 @@ class Collector:
                 st.last_finished = now_iso()
                 st.last_summary = summary
                 self.store.set_meta("last_poll", st.last_finished)
+            if completed:
+                self._notify(known, results)
             return summary
+
+    def _notify(self, known: list[dict[str, Any]], results: dict[str, bool]) -> None:
+        """Offline/online, new devices and new findings after a sync. Errors here never break the sync."""
+        try:
+            notifier = self.notifier
+            new_devices: list[dict[str, Any]] = []
+            if known and notifier.wants("new_device"):    # the first inventory is not reported
+                ids = {d["id"] for d in known}
+                macs = {d.get("mac") for d in known if d.get("mac")}
+                # same MAC under a new ID (firmware 2.x renames devices) is not a new device
+                new_devices = [d for d in self.store.devices()
+                               if d["id"] not in ids and not (d.get("mac") and d.get("mac") in macs)]
+            findings = None
+            if notifier.wants("drift"):
+                try:
+                    policy_data = pol.load(self.settings.policy_path)
+                except pol.PolicyError:
+                    policy_data = None
+                if policy_data:
+                    findings = report.build(self.store, policy_data, self.settings.poll_interval_min)["findings"]
+            notifier.after_run(results, new_devices, findings)
+        except Exception:
+            log.exception("Notifications after the sync failed")
 
     async def _poll_one(self, http: httpx.AsyncClient, dev: dict[str, Any]) -> tuple[bool, bool]:
         client = ShellyClient(http, dev["host"], self.settings.shelly_password, self.settings.rpc_timeout_s)
+        self._unreachable.discard(dev["id"])
         try:
             snap = await client.snapshot()
         except (httpx.HTTPError, RpcError, ValueError, KeyError) as exc:
             msg = f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
+            if isinstance(exc, httpx.TransportError):   # no answer at all; an RPC error means it is online
+                self._unreachable.add(dev["id"])
             self.store.record_error(dev["id"], msg)
             log.warning("%s (%s): %s", dev["id"], dev["host"], msg)
             return False, False
@@ -211,6 +248,7 @@ class Collector:
         if info.get("id") != dev["id"]:
             if dev["id"] not in replaced:
                 # DHCP reassigned the address: a different device now answers at this IP
+                self._unreachable.add(dev["id"])
                 self.store.record_error(
                     dev["id"],
                     f"{dev['host']} now answers as {info.get('id')}. The next scan will look for this device again."
@@ -590,6 +628,7 @@ class Collector:
         await self.firmware.stop()
         await self.apply.stop()
         await self.address.stop()
+        await self.notifier.stop()      # last: failures of the jobs above go along
         if self._task:
             self._task.cancel()
             try:

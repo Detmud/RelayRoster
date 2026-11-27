@@ -12,6 +12,7 @@ app/
   collector.py         Scan and periodic reads, rename, restart, write configuration; owns the firmware updater
   address.py           Address job: static address from the address plan, wait for the device, audit
   firmware.py          Firmware job: identity, CheckForUpdate, Update, wait for restart, audit
+  notify.py            Notifications via ntfy/webhook: offline/online, new devices, new findings, failed writes
   apply.py             Apply profile and bulk change: preview per device, background job via set_config
   shelly.py            RPC client with allow list (is_read_only, is_rename_call, is_firmware_call, is_reboot_call, …)
   writable.py          Allow list for editing: fields per component, SetConfig methods, value checks, building calls
@@ -53,7 +54,7 @@ All asset and API paths are relative (`static/`, `api/`), so the app also works 
 `/api/devices/{id}/name`, `/api/devices/{id}/reboot`, `/api/devices/{id}/config[/preview]`, `/api/names/plan|apply`,
 `/api/firmware/update|job|job/cancel`, `/api/snapshots/{id}/diff|download`, `/api/backup.zip`, `/api/policy`,
 `/api/profiles[/{name}]|preview|order`, `/api/devices/{id}/override`, `/api/apply[/preview]`, `/api/apply/job[/cancel]`,
-`/api/settings`. State-changing calls require `X-Requested-With: relayroster`.
+`/api/settings`, `/api/notify/test`. State-changing calls require `X-Requested-With: relayroster`.
 
 ## Testing notes
 

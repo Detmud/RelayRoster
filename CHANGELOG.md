@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+- **Notifications via ntfy or webhook** (#11). Settings has a new group "Notifications": an ntfy topic URL (with
+  optional access token) and/or a webhook URL that receives JSON. Events: device offline (after
+  `NOTIFY_OFFLINE_AFTER` failed syncs in a row, 2 by default) and back online, new device found, new deviation from
+  the policy and failed write actions. Each type can be switched off. One message per sync, write failures within
+  10 seconds are sent together, the first inventory and existing findings are not reported. "Send test
+  notification" checks the URLs. Nothing is written to devices. See docs/configuration.md
+
 ## [1.1.0] - 2026-11-27
 
 - Device settings: **"Static address…" in the Wi-Fi and Ethernet cards** opens the address change for this

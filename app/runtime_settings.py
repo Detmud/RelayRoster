@@ -13,6 +13,7 @@ import logging
 import re
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 from . import discovery
 from .config import Settings
@@ -26,7 +27,7 @@ META_KEY = "settings"
 class Field:
     key: str
     env: str
-    kind: str            # "list" | "int" | "float" | "bool" | "password"
+    kind: str            # "list" | "int" | "float" | "bool" | "password" | "url"
     label: str
     help: str
     group: str
@@ -71,12 +72,44 @@ FIELDS: tuple[Field, ...] = (
           "Wait per RPC call to a device.", "Sync", 1, 120, "s"),
     Field("snapshots_keep", "SNAPSHOTS_KEEP", "int", "Backups per device",
           "Older snapshots are deleted.", "Sync", 1, 10000),
+    Field("notify_ntfy_url", "NOTIFY_NTFY_URL", "url", "ntfy topic URL",
+          "Full URL of an ntfy topic, e.g. https://ntfy.sh/my-shelly-fleet or your own ntfy server. "
+          "Empty = no ntfy messages.", "Notifications"),
+    Field("notify_ntfy_token", "NOTIFY_NTFY_TOKEN", "password", "ntfy access token",
+          "Only for protected topics (sent as Bearer token). Never shown again after saving.", "Notifications"),
+    Field("notify_webhook_url", "NOTIFY_WEBHOOK_URL", "url", "Webhook URL",
+          "Receives a JSON POST per batch of events, e.g. a Home Assistant or Node-RED webhook. "
+          "Empty = no webhook.", "Notifications"),
+    Field("notify_offline", "NOTIFY_OFFLINE", "bool", "Device offline / back online",
+          "A device stopped answering, or answers again after it was reported offline.", "Notifications"),
+    Field("notify_new_device", "NOTIFY_NEW_DEVICE", "bool", "New device found",
+          "A scan found a device RelayRoster did not know yet. The very first inventory is not reported.",
+          "Notifications"),
+    Field("notify_drift", "NOTIFY_DRIFT", "bool", "New deviation from the policy",
+          "A finding that the previous sync did not have. Existing findings are not repeated.", "Notifications"),
+    Field("notify_write_failed", "NOTIFY_WRITE_FAILED", "bool", "Write action failed",
+          "Every failed entry in the activity log (rename, settings, firmware, restart, …). "
+          "Failures within a few seconds are sent together.", "Notifications"),
+    Field("notify_offline_after", "NOTIFY_OFFLINE_AFTER", "int", "Offline after",
+          "Failed syncs in a row before a device counts as offline. Protects against flapping Wi-Fi and restarts.",
+          "Notifications", 1, 100, "syncs"),
     Field("sidebar_folded", "SIDEBAR_FOLDED", "bool", "Compact sidebar",
           "Icon bar that expands on hover. Off: the sidebar always shows the page titles. Desktop only.", "Appearance"),
 )
 BY_KEY = {f.key: f for f in FIELDS}
 
 _HOST = re.compile(r"^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$")
+
+
+def _is_url(value: str) -> bool:
+    if len(value) > 2000 or any(c.isspace() for c in value):
+        return False
+    try:
+        u = urlsplit(value)
+        u.port   # ValueError for an invalid port
+    except ValueError:
+        return False
+    return u.scheme in ("http", "https") and bool(u.hostname)
 
 
 class SettingsError(ValueError):
@@ -108,6 +141,13 @@ def _clean(f: Field, value: Any) -> Any:
             raise ValueError("Expected text.")
         if len(value) > 256:
             raise ValueError("At most 256 characters.")
+        return value
+    if f.kind == "url":
+        if not isinstance(value, str):
+            raise ValueError("Expected text.")
+        value = value.strip()
+        if value and not _is_url(value):
+            raise ValueError("Expected an http:// or https:// URL.")
         return value
     if f.kind in ("int", "float"):
         if isinstance(value, bool):

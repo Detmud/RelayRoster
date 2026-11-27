@@ -21,6 +21,7 @@ where they deviate from the state you want, or from each other. Everything stays
 - **Backups**: versioned configuration snapshots with diff, download and restore
 - **Firmware**: see which devices have updates and roll them out
 - **Bulk changes**: change one setting on many devices at once
+- **Notifications**: devices offline, new devices, new drift and failed writes via ntfy or webhook
 
 **Read-only by default.** Every write function (configuration, firmware updates, restarts, device passwords) has
 its own switch and is off until you turn it on. Every write is recorded and shown on the Activity page.

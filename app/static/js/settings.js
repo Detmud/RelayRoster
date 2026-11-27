@@ -4,10 +4,10 @@
 
 let settingsData = null;
 let settingsLoaded = false;
-let clearPassword = false;
+let clearPasswords = new Set();   // password fields marked for removal
 
 const fmtSetting = (f, v) => f.kind === "list" ? (v?.length ? v.join(", ") : "(none)")
-  : f.kind === "bool" ? (v ? "on" : "off") : `${v}${f.unit ? ` ${f.unit}` : ""}`;
+  : f.kind === "bool" ? (v ? "on" : "off") : f.kind === "url" ? (v || "(none)") : `${v}${f.unit ? ` ${f.unit}` : ""}`;
 
 function settingInput(f) {
   const id = `set-${f.key}`;
@@ -21,7 +21,10 @@ function settingInput(f) {
   if (f.kind === "password") {
     const ph = f.is_set ? "Set. Leave empty to keep it." : "Not set";
     return `<div class="input-group"><input id="${id}" class="form-control" type="password" autocomplete="new-password" placeholder="${esc(ph)}">
-      ${f.is_set ? `<button class="btn" type="button" id="setPwClear">Remove</button>` : ""}</div>`;
+      ${f.is_set ? `<button class="btn" type="button" data-clear="${f.key}">Remove</button>` : ""}</div>`;
+  }
+  if (f.kind === "url") {
+    return `<input id="${id}" class="form-control font-monospace" type="url" spellcheck="false" placeholder="https://…" value="${esc(f.value || "")}">`;
   }
   const step = f.kind === "float" ? "0.1" : "1";
   const input = `<input id="${id}" class="form-control" type="number" inputmode="decimal" step="${step}" min="${f.min ?? ""}" max="${f.max ?? ""}" value="${esc(f.value)}">`;
@@ -43,29 +46,58 @@ function renderSettings(errors = {}) {
     if (!g) groups.push(g = { name: f.group, fields: [] });
     g.fields.push(f);
   }
-  clearPassword = false;
+  clearPasswords = new Set();
   $("#setForm").innerHTML = groups.map((g) => `<fieldset class="mb-4"><h3 class="mb-3">${esc(g.name)}</h3>
     ${g.fields.map((f) => `<div class="mb-3" data-field="${f.key}">
       ${f.kind === "bool" ? "" : `<label class="form-label" for="set-${f.key}">${esc(f.label)}</label>`}
       ${settingInput(f)}
       <div class="invalid-feedback d-block${errors[f.key] ? "" : " d-none"}">${esc(errors[f.key] || "")}</div>
       ${settingHint(f)}
-    </div>`).join("")}</fieldset>`).join("")
+    </div>`).join("")}${g.name === "Notifications" ? notifyBlock() : ""}</fieldset>`).join("")
     + `<p class="text-secondary small mb-0">Stay in the environment: ${settingsData.env_only.map((e) => `<code>${esc(e)}</code>`).join(", ")}.</p>`;
   for (const [k, msg] of Object.entries(errors)) {
     if (msg) $(`#set-${k}`)?.classList.add("is-invalid");
   }
-  $("#setPwClear")?.addEventListener("click", (ev) => {
-    clearPassword = !clearPassword;
-    ev.target.classList.toggle("btn-danger", clearPassword);
-    ev.target.textContent = clearPassword ? "Will be removed" : "Remove";
-    $("#set-shelly_password").value = "";
-    $("#set-shelly_password").disabled = clearPassword;
-  });
+  $$("#setForm [data-clear]").forEach((btn) => btn.addEventListener("click", () => {
+    const key = btn.dataset.clear;
+    const on = !clearPasswords.has(key);
+    if (on) clearPasswords.add(key); else clearPasswords.delete(key);
+    btn.classList.toggle("btn-danger", on);
+    btn.textContent = on ? "Will be removed" : "Remove";
+    $(`#set-${key}`).value = "";
+    $(`#set-${key}`).disabled = on;
+  }));
+  $("#notifyTest")?.addEventListener("click", () => sendTestNotification().catch((e) => showError(e.message)));
   $$("#setForm [data-reset]").forEach((a) => a.addEventListener("click", (ev) => {
     ev.preventDefault();
     saveSettings({ [a.dataset.reset]: null }).catch((e) => showError(e.message));
   }));
+}
+
+// Notifications: last delivery and test button, below the notification settings
+function notifyResultText(results) {
+  return Object.entries(results || {}).map(([t, r]) => `${t}: ${r.ok ? "delivered" : `failed (${r.error})`}`).join(" · ");
+}
+
+function notifyBlock() {
+  const st = settingsData.notify || {};
+  const last = st.last;
+  const lastText = last
+    ? `Last ${last.test ? "test message" : "message"} ${esc(fmtTime(last.at))}: ${esc(notifyResultText(last.results))}`
+    : "Nothing sent yet.";
+  return `<div class="mb-3" id="notifyStatus">
+    <button class="btn" type="button" id="notifyTest"${st.targets?.length ? "" : " disabled"}>Send test notification</button>
+    <div class="form-hint">${st.targets?.length ? "Uses the saved URLs. Save changes first." : "Save an ntfy topic URL or a webhook URL first."}</div>
+    <div class="form-hint">${lastText}</div>
+  </div>`;
+}
+
+async function sendTestNotification() {
+  const { status, body } = await api("api/notify/test", { method: "POST", keep: "all" });
+  if (status === 400) { settingsMessage("warning", esc(body.detail)); return; }
+  if (body.notify) settingsData.notify = body.notify;
+  renderSettings();
+  settingsMessage(body.ok ? "success" : "danger", `Test notification: ${esc(notifyResultText(body.results))}`);
 }
 
 function settingsMessage(kind, html) {
@@ -88,9 +120,10 @@ function collectSettings() {
     if (!el) continue;
     let v;
     if (f.kind === "bool") v = el.checked;
+    else if (f.kind === "url") v = el.value.trim();
     else if (f.kind === "list") v = el.value.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
     else if (f.kind === "password") {
-      if (clearPassword) { out[f.key] = ""; continue; }
+      if (clearPasswords.has(f.key)) { out[f.key] = ""; continue; }
       if (!el.value) continue;
       v = el.value;
     } else v = el.value.trim() === "" ? el.value : Number(el.value);
