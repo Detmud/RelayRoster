@@ -64,6 +64,19 @@ class Settings:
     # Sidebar as an icon bar that expands on hover (Tabler "Folded hover"). Off: always expanded
     sidebar_folded: bool = field(default_factory=lambda: _bool("SIDEBAR_FOLDED", False))
 
+    # Notifications (app/notify.py). No target = no notifications. Nothing is written to devices.
+    # ntfy: full topic URL, e.g. https://ntfy.sh/my-shelly-fleet; optional access token (Bearer)
+    notify_ntfy_url: str = field(default_factory=lambda: (_env("NOTIFY_NTFY_URL", "") or "").strip())
+    notify_ntfy_token: str = field(default_factory=lambda: _env("NOTIFY_NTFY_TOKEN", "") or "")
+    # Webhook: receives a JSON POST per batch of events
+    notify_webhook_url: str = field(default_factory=lambda: (_env("NOTIFY_WEBHOOK_URL", "") or "").strip())
+    notify_offline: bool = field(default_factory=lambda: _bool("NOTIFY_OFFLINE", True))
+    notify_new_device: bool = field(default_factory=lambda: _bool("NOTIFY_NEW_DEVICE", True))
+    notify_drift: bool = field(default_factory=lambda: _bool("NOTIFY_DRIFT", True))
+    notify_write_failed: bool = field(default_factory=lambda: _bool("NOTIFY_WRITE_FAILED", True))
+    # Failed syncs in a row before a device counts as offline (against flapping)
+    notify_offline_after: int = field(default_factory=lambda: _int("NOTIFY_OFFLINE_AFTER", 2))
+
     # Snapshots kept per device (the oldest are dropped)
     snapshots_keep: int = field(default_factory=lambda: _int("SNAPSHOTS_KEEP", 100))
 

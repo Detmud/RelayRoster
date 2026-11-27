@@ -53,7 +53,7 @@ def render_login(html: str, authn: Auth, cfg: Settings) -> str:
 
 
 def create_app(cfg: Settings | None = None, transport=None, autostart: bool = True,
-               oidc_transport=None) -> FastAPI:
+               oidc_transport=None, notify_transport=None) -> FastAPI:
     cfg = cfg or default_settings
     logging.basicConfig(level=cfg.log_level.upper(), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     os.makedirs(cfg.data_dir, exist_ok=True)
@@ -64,7 +64,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
     pol.ensure_file(cfg.policy_path)
     # Apply overrides from the UI before the collector, so the very first run uses them
     runtime = RuntimeSettings(cfg, store)
-    collector = Collector(store, cfg, transport=transport)
+    collector = Collector(store, cfg, transport=transport, notify_transport=notify_transport)
     authn = Auth(cfg, store)
     oidc = OIDC(cfg, transport=oidc_transport)
     if authn.oidc_enabled and not cfg.oidc_client_secret:
@@ -963,7 +963,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
 
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings() -> dict[str, Any]:
-        return runtime.view()
+        return {**runtime.view(), "notify": collector.notifier.status()}
 
     @app.put("/api/settings", dependencies=[Depends(auth), Depends(csrf)])
     def put_settings(settings: dict[str, Any] = Body(..., embed=True)) -> JSONResponse:
@@ -974,7 +974,17 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         collector.settings_changed()
         if changed:   # only the names of the settings, never values (password)
             store.add_audit("", "settings", None, None, True, ", ".join(map(str, changed)))
-        return JSONResponse({"ok": True, "changed": changed, **runtime.view()})
+        return JSONResponse({"ok": True, "changed": changed, **runtime.view(), "notify": collector.notifier.status()})
+
+    @app.post("/api/notify/test", dependencies=[Depends(auth), Depends(csrf)])
+    async def notify_test() -> JSONResponse:
+        """Sends a test message to every configured target and waits for the answer."""
+        if not collector.notifier.active():
+            return JSONResponse({"ok": False, "detail": "Set an ntfy topic URL or a webhook URL first."},
+                                status_code=400)
+        results = await collector.notifier.deliver([], test=True)
+        return JSONResponse({"ok": all(r["ok"] for r in results.values()), "results": results,
+                             "notify": collector.notifier.status()})
 
     # ---- Audit log across all devices ---------------------------------------------------
 

@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 import threading
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS devices (
@@ -70,6 +71,8 @@ class Store:
         self.db.execute("PRAGMA foreign_keys=ON")
         self.db.executescript(SCHEMA)
         self.db.commit()
+        # Called after every audit entry with the same arguments (notifications about failed write actions)
+        self.on_audit: Callable[[str, str, str | None, str | None, bool, str | None], None] | None = None
 
     # ---- Devices -------------------------------------------------------------------------------
 
@@ -259,6 +262,11 @@ class Store:
                 (now_iso(), device_id, action, old, new, 1 if ok else 0, (detail or "")[:500] or None),
             )
             self.db.commit()
+        if self.on_audit is not None:
+            try:
+                self.on_audit(device_id, action, old, new, ok, (detail or "")[:500] or None)
+            except Exception:   # a notification never breaks the write action itself
+                logging.getLogger(__name__).exception("Audit hook failed")
 
     def audit(self, device_id: str | None = None, limit: int = 50, action: str | None = None) -> list[dict[str, Any]]:
         """Newest first. device_id "" = entries without device (Settings, policy), None = all."""

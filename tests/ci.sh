@@ -40,6 +40,9 @@ step "test_profiles.py"
 step "test_apply.py"
 "$PY" tests/test_apply.py
 
+step "test_notify.py"
+"$PY" tests/test_notify.py
+
 step "test_oidc.py"
 "$PY" tests/test_oidc.py
 
