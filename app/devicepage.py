@@ -40,11 +40,11 @@ SCHEMA: dict[str, dict[str, Any]] = {
         "rpc_udp.listen_port": {"label": "RPC over UDP: listen port", "kind": "number"},
     }},
     "wifi": {"title": "Wi-Fi", "fields": {
+        **{f"sta.{k}": v for k, v in _STA.items()},
+        **{f"sta1.{k}": {**v, "label": f"Fallback: {v['label']}"} for k, v in _STA.items()},
         "ap.enable": {"label": "Access point", "kind": "bool"},
         "ap.ssid": {"label": "Access point SSID", "kind": "text"},
         "ap.range_extender.enable": {"label": "Range extender", "kind": "bool"},
-        **{f"sta.{k}": v for k, v in _STA.items()},
-        **{f"sta1.{k}": {**v, "label": f"Fallback: {v['label']}"} for k, v in _STA.items()},
         "roam.rssi_thr": {"label": "Roaming threshold", "kind": "number", "unit": "dBm"},
         "roam.interval": {"label": "Roaming interval", "kind": "number", "unit": "s"},
     }},
@@ -291,9 +291,10 @@ def settings_view(config: dict[str, Any] | None, *, concrete: dict[str, tuple[An
             sec["enabled"] = value
     ordered = [sections[c] for c in sorted(sections, key=_sort_key)]
     for sec in ordered:
-        # Known fields in schema order first, unknown ones afterwards alphabetically
+        # "enable" first, then known fields in schema order, unknown ones afterwards alphabetically
         order = list(((SCHEMA.get(_comp_type(sec["id"])) or {}).get("fields") or {}).keys())
-        sec["fields"].sort(key=lambda f: (order.index(f["path"].split(".", 1)[1]) if f["known"] else len(order),
+        sec["fields"].sort(key=lambda f: (f["path"].split(".", 1)[1] != "enable",
+                                          order.index(f["path"].split(".", 1)[1]) if f["known"] else len(order),
                                           f["path"]))
     return {"sections": ordered, "info": info}
 

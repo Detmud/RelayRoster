@@ -258,6 +258,7 @@ def _validate_network(net: Any) -> list[str]:
     errs = [f"network: unknown field '{k}' (allowed: {', '.join(sorted(_NETWORK_KEYS))})"
             for k in net if k not in _NETWORK_KEYS]
     subnets: list[ipaddress.IPv4Network] = []
+    pools: list[ipaddress.IPv4Network] = []
     for key in ("subnet", "dhcp_pool"):
         try:
             nets = _networks(net.get(key))
@@ -266,13 +267,18 @@ def _validate_network(net: Any) -> list[str]:
             continue
         if key == "subnet":
             subnets = nets
-    # Only used when RelayRoster sets a static address on a device that is on DHCP
+        else:
+            pools = nets
+    # Gateway and DNS server of every static address RelayRoster sets
+    addrs: dict[str, ipaddress.IPv4Address] = {}
     for key in ("gateway", "nameserver"):
         if net.get(key) is not None:
             try:
-                ipaddress.IPv4Address(str(net[key]))
+                addrs[key] = ipaddress.IPv4Address(str(net[key]))
             except ValueError:
                 errs.append(f"network.{key}: '{net[key]}' is not an IPv4 address")
+    if "gateway" in addrs and subnets and not any(addrs["gateway"] in n for n in subnets):
+        errs.append(f"network.gateway: {addrs['gateway']} is not inside network.subnet")
     blocks = net.get("blocks")
     if blocks is None:
         return errs
@@ -301,6 +307,11 @@ def _validate_network(net: Any) -> list[str]:
             continue
         if subnets and not any(start in n and end in n for n in subnets):
             errs.append(f"{where}.range: {blk['range']} is not fully inside network.subnet")
+        # The router would hand these addresses out too: overlap with the pool means two devices on one address
+        for pool in pools:
+            if start <= pool.broadcast_address and pool.network_address <= end:
+                errs.append(f"{where}.range: {blk['range']} overlaps network.dhcp_pool {pool}")
+        errs.extend(f"{where}.range: contains network.{key} {a}" for key, a in addrs.items() if start <= a <= end)
     return errs
 
 

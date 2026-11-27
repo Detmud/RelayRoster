@@ -778,6 +778,14 @@ def test_network_validation():
     assert "blocks[3]: 'range' is missing" in joined
     assert "blocks[4]: 'match' is missing" in joined
     assert pol.validate({"network": {"subnet": "not a network"}})[0].startswith("network.subnet:")
+    # Values of every static address RelayRoster writes: they have to fit together
+    errs = " | ".join(pol.validate({"network": {"subnet": "192.168.200.0/24", "dhcp_pool": "192.168.200.128/25",
+                                                "gateway": "192.168.201.1", "nameserver": "192.168.200.12", "blocks": [
+        {"name": "a", "match": {"id": "x"}, "range": "192.168.200.120-139"},
+        {"name": "b", "match": {"id": "y"}, "range": "192.168.200.10-19"}]}}))
+    assert "network.gateway: 192.168.201.1 is not inside network.subnet" in errs
+    assert "blocks[0].range: 192.168.200.120-139 overlaps network.dhcp_pool 192.168.200.128/25" in errs
+    assert "blocks[1].range: contains network.nameserver 192.168.200.12" in errs
     assert pol.validate(pol.parse(EXAMPLE_NETWORK) | {"peer_ignore": []}) == []
 
 
@@ -986,6 +994,12 @@ def test_device_settings_view():
     assert dp.field_meta("foo:3.bar_baz.qux", [1])["kind"] == "object"
     assert dp.field_meta("foo:3.bar_baz.qux", 1)["label"] == "Bar baz › qux"
     assert dp.settings_view(None) == {"sections": [], "info": []}
+    # "enable" is the first row of every component, also when the schema or the alphabet says otherwise
+    first = {s["id"]: s["fields"][0]["path"] for s in dp.settings_view({
+        "input:0": {"id": 0, "name": "In", "enable": True, "type": "switch"},
+        "wifi": {"ap": {"enable": False, "ssid": "S"}, "sta": {"ssid": "LAN", "enable": True}},
+        "foo": {"alpha": 1, "enable": True}})["sections"]}
+    assert first == {"input:0": "input:0.enable", "wifi": "wifi.sta.enable", "foo": "foo.enable"}, first
     # Readable names for findings and the peer comparison; synthetic paths have their own names
     assert dp.setting_label("switch:0.auto_off") == "Switch 0 · Auto off"
     assert dp.setting_label("firmware.peer") == "Firmware behind its type" and dp.setting_label("auth") == "Password protection"

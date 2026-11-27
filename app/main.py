@@ -502,21 +502,33 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
         return {"job": job.view() if job else None, "allow_address": cfg.allow_address}
 
     @app.post("/api/address/preview", dependencies=[Depends(auth), Depends(csrf)])
-    def address_preview(device_ids: list[str] | None = Body(None, embed=True)) -> dict[str, Any]:
-        """Suggested address per device that is not in its block, with the values the call would use. Reads
-        stored data only; the job checks everything again on the device."""
+    def address_preview(device_ids: list[str] | None = Body(None, embed=True),
+                        targets_in: dict[str, str] | None = Body(None, embed=True, alias="targets")) -> dict[str, Any]:
+        """Suggested address per device that is not in its block, with the values the call would use. With
+        device_ids: those devices, whatever their block. targets: {device_id: address} typed in the dialog, checked
+        instead of the suggestion. Reads stored data only; the job checks everything again on the device."""
         policy_data, policy_errors = load_policy()
         if not policy_data:
             return {"devices": [], "errors": policy_errors or ["No policy"], "allow_address": cfg.allow_address}
         # Same suggestions as the findings of the overview: every device gets its own free address
         rep = report.build(store, policy_data, cfg.poll_interval_min)
         targets = {f["device_id"]: f.get("target") for f in rep["findings"] if f["kind"] == "network" and f["path"] == "ip"}
+        want = {str(k): str(v).strip() for k, v in (targets_in or {}).items()}   # typed in the dialog, checked again
         rows = []
         for d in store.devices():
             blk = pol.address_block(policy_data, d)
-            if d["id"] not in targets or not blk or (device_ids is not None and d["id"] not in device_ids):
+            if device_ids is not None:
+                # A device asked for by ID is listed even inside its block or without one; without a suggestion
+                # it keeps its current address, which turns DHCP into a static address
+                if d["id"] not in device_ids:
+                    continue
+                target = want.get(d["id"]) or targets.get(d["id"]) or d["host"]
+                block = (blk.get("name") or str(blk["range"])) if blk else None
+            elif d["id"] in targets and blk:
+                target, block = want.get(d["id"]) or targets[d["id"]], blk.get("name") or str(blk["range"])
+            else:
                 continue
-            sug = {"target": targets[d["id"]], "block": blk.get("name") or str(blk["range"])}
+            sug = {"target": target, "block": block}
             config = ((store.latest_snapshot(d["id"]) or {}).get("data") or {}).get("config")
             row = {"device_id": d["id"], "name": d.get("name"), "host": d["host"], "target": sug["target"],
                    "block": sug["block"], "model_name": model_name(d.get("model"), d.get("app"), d.get("gen")),
@@ -524,7 +536,7 @@ def create_app(cfg: Settings | None = None, transport=None, autostart: bool = Tr
             if sug["target"]:
                 try:
                     row.update(addressmod.plan_call(config, d.get("status"), d["host"],
-                                                    policy_data.get("network"), sug["target"]))
+                                                    policy_data.get("network"), sug["target"], blk))
                 except addressmod.AddressError as exc:
                     row["error"] = str(exc)
             rows.append(row)
