@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-27
+
 - Device settings: **"Static address…" in the Wi-Fi and Ethernet cards** opens the address change for this
   device, also when it is inside its block or has none. Suggested is the next free address of its block, else
   the current one (DHCP -> static in place). A typed address is checked again right away. A change counts as
